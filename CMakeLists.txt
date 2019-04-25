@@ -50,21 +50,21 @@ find_package(OpenCV REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  vision_gate.msg
-  vision_flare.msg
-  vision_drum.msg
-)
+#add_message_files(
+#  FILES
+#  vision_gate.msg
+#  vision_flare.msg
+#  vision_drum.msg
+#)
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  vision_srv_gate.srv
-  vision_srv_flare.srv
-  vision_srv_drum.srv
-  vision_srv_golf.srv
-)
+#add_service_files(
+#  FILES
+#  vision_srv_gate.srv
+#  vision_srv_flare.srv
+#  vision_srv_drum.srv
+#  vision_srv_golf.srv
+#)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
