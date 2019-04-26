@@ -91,7 +91,7 @@ def main():
 def _log(msg, level='info'):
     module = 'Vision'
     submodule = 'Gate'
-    real_msg = '[%s][%s] %s' % (module, submodule)
+    real_msg = '[%s][%s] %s' % (module, submodule, msg)
     if level != 'error':
         rospy.logerr(real_msg)
     else:
