@@ -9,16 +9,15 @@ project(zeabus_vision)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   message_generation
-  rospy
-  std_msgs
-  sensor_msgs
   nav_msgs
+  rospy
+  sensor_msgs
+  std_msgs
 )
-find_package(OpenCV REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
+find_package(OpenCV REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -35,10 +34,10 @@ find_package(OpenCV REQUIRED)
 ##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
 ## * In the file package.xml:
 ##   * add a build_depend tag for "message_generation"
-##   * add a build_depend and a run_depend tag for each package in MSG_DEP_SET
+##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
 ##     but can be declared for certainty nonetheless:
-##     * add a run_depend tag for "message_runtime"
+##     * add a exec_depend tag for "message_runtime"
 ## * In this file (CMakeLists.txt):
 ##   * add "message_generation" and every package in MSG_DEP_SET to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
@@ -50,21 +49,18 @@ find_package(OpenCV REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-#add_message_files(
-#  FILES
-#  vision_gate.msg
-#  vision_flare.msg
-#  vision_drum.msg
-#)
+# add_message_files(
+#   FILES
+#   Message1.msg
+#   Message2.msg
+# )
 
 ## Generate services in the 'srv' folder
-#add_service_files(
-#  FILES
-#  vision_srv_gate.srv
-#  vision_srv_flare.srv
-#  vision_srv_drum.srv
-#  vision_srv_golf.srv
-#)
+# add_service_files(
+#   FILES
+#   Service1.srv
+#   Service2.srv
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -75,10 +71,11 @@ find_package(OpenCV REQUIRED)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
-  DEPENDENCIES
-  std_msgs
-  nav_msgs
-  geometry_msgs
+   DEPENDENCIES
+   nav_msgs
+   sensor_msgs
+   std_msgs
+   geometry_msgs
 )
 
 ################################################
@@ -88,7 +85,7 @@ generate_messages(
 ## To declare and build dynamic reconfigure parameters within this
 ## package, follow these steps:
 ## * In the file package.xml:
-##   * add a build_depend and a run_depend tag for "dynamic_reconfigure"
+##   * add a build_depend and a exec_depend tag for "dynamic_reconfigure"
 ## * In this file (CMakeLists.txt):
 ##   * add "dynamic_reconfigure" to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
@@ -111,12 +108,11 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  # INCLUDE_DIRS include
-  LIBRARIES zeabus_vision
-  # CATKIN_DEPENDS message_generation rospy std_msgs
-  # DEPENDS system_lib
+#  INCLUDE_DIRS include
+   LIBRARIES zeabus_vision
+#  CATKIN_DEPENDS message_generation nav_msgs rospy sensor_msgs std_msgs
+#  DEPENDS system_lib
 )
-catkin_package()
 
 ###########
 ## Build ##
