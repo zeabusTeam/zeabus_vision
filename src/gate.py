@@ -11,7 +11,7 @@ import cv2 as cv
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CompressedImage
-from zeabus_util.srv import VisionGate, VisionGateResponse
+from zeabus_utility.srv import VisionGate, VisionGateResponse
 from gate_lib import Gate
 
 
