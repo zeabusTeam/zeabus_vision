@@ -69,8 +69,6 @@ class Gate:
             int(img_size[0]*0.15), int(img_size[0]*0.15)))
         gray = clahe.apply(gray)
 
-        slide_box_size = int(self.img_size[0]*0.01)
-
         (_mu, sigma) = cv2.meanStdDev(gray)
         edges = cv2.Canny(img, _mu - 1.25*sigma, _mu + 1.25*sigma)
 
@@ -111,5 +109,5 @@ class Gate:
             return [0]
         res = []
         for key, val in enumerate(first):
-            res.append(abs(val-second[key])*2/(val+second[key]+2))
+            res.append(abs(val-second[key])/2)
         return tuple(res)
