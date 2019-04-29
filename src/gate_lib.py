@@ -48,7 +48,7 @@ class Gate:
         small_image = cv2.resize(img, None, fx=0.25, fy=0.25)
         processed = self._process(small_image)
         if showImg:
-            cv2.imshow(str(self.filename)+' ct', processed[4])
+            cv2.imshow(self.filename+' ct', processed[4])
         if processed[5] is not None:
             diff = self.calcDiffPercent(processed[5], self.last_detect)
             cond = self.last_detect is None or diff[0] < 0.4
@@ -60,14 +60,16 @@ class Gate:
         def my_area(ct):
             x, y, w, h = cv2.boundingRect(ct)
             return w*h
-        img_size = img.shape[0:2]
-        k_size = int(img_size[0]/80)
+        self.img_size = img.shape[0:2]
+        k_size = int(self.img_size[0]/80)
         k_size += (k_size % 2)-1
         blured = cv2.medianBlur(img, k_size)
         gray = cv2.cvtColor(blured, cv2.COLOR_BGR2GRAY)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(
             int(img_size[0]*0.15), int(img_size[0]*0.15)))
         gray = clahe.apply(gray)
+
+        slide_box_size = int(self.img_size[0]*0.01)
 
         (_mu, sigma) = cv2.meanStdDev(gray)
         edges = cv2.Canny(img, _mu - 1.25*sigma, _mu + 1.25*sigma)
