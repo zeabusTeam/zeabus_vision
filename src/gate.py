@@ -10,21 +10,22 @@ import cv2 as cv
 
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, Image
 from zeabus_utility.srv import VisionGate, VisionGateResponse
 from gate_lib import Gate
 
 
-SUB_SAMPLING = 0.3
+SUB_SAMPLING = 0.5
 PUBLIC_TOPIC = '/vision/mission/gate'
-CAMERA_TOPIC = '/vision/front/image_rect_color/compressed'
+# CAMERA_TOPIC = '/vision/front/image_rect_color/compressed'
+CAMERA_TOPIC = '/stereo/right/image_rect_color/compressed'
 DEBUG = {
-    'console': True,
-    'imageSource': True
+    'console': False
 }
 
 process_obj = Gate()
 image = None
+result_pub = None
 last_found = [0.0, 0.0, 0.0, 0.0, 0.0]
 bridge = CvBridge()
 
@@ -32,20 +33,22 @@ bridge = CvBridge()
 def imageCallback(msg):
     global image, bridge, SUB_SAMPLING
     try:
-        cv_image = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
+        cv_image = bridge.compressed_imgmsg_to_cv2(msg)
     except CvBridgeError as e:
-        _log(str(e))
+        _log(str(e), 'error')
     image = cv.resize(cv_image, None, fx=SUB_SAMPLING, fy=SUB_SAMPLING)
 
 
 def find_gate():
-    global image, last_found
+    global image, last_found, result_pub, bridge
     output = None
     if image is not None:
-        output = process_obj.doProcess(image)
-        output = [float(i) for i in output]
+        output, img = process_obj.doProcess(image)
+        result_pub.publish(bridge.cv2_to_imgmsg(img))
+        if output is not None:
+            output = [float(i) for i in output]
     else:
-        print('No input image')
+        _log('No input image', 'error')
     if output is not None:
         last_found = output
         return [1]+last_found
@@ -58,7 +61,7 @@ def gate_callback(msg):
     req = str(msg.req.data)
     res = VisionGateResponse()
     if DEBUG['console'] or task == '':
-        print('Service called', msg, req)
+        print('Service called', task, req)
     if task in ['gate', '']:
         find_result = find_gate()
         res.found = find_result[0]
@@ -80,9 +83,12 @@ def gate_callback(msg):
 
 
 def main():
+    global result_pub
     rospy.init_node('vision_gate')
     if not rospy.is_shutdown():
         rospy.Service('gate_service', VisionGate(), gate_callback)
+        result_pub = rospy.Publisher(
+            PUBLIC_TOPIC+'/result', Image, queue_size=10)
         rospy.Subscriber(CAMERA_TOPIC, CompressedImage, imageCallback)
         _log("Service is running.")
         rospy.spin()
@@ -96,7 +102,7 @@ def _log(msg, level='info'):
         rospy.logerr(real_msg)
     else:
         rospy.loginfo(real_msg)
-    print(real_msg)
+    # print(real_msg)
 
 
 if __name__ == "__main__":
