@@ -45,8 +45,8 @@ class Gate:
         Returns:
             list -- Found data. None or list of cx1,cy1,cx2,cy2,area
         """
-        small_image = cv2.resize(img, None, fx=0.25, fy=0.25)
-        processed = self._process(small_image)
+        # small_image = cv2.resize(img, None, fx=0.25, fy=0.25)
+        processed = self._process(img)
         if showImg:
             cv2.imshow(self.filename+' ct', processed[4])
         if processed[5] is not None:
