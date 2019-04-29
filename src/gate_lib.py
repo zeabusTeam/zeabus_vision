@@ -1,7 +1,7 @@
 '''
 This is first script to detect gate in ROBOSub 2018.
 '''
-
+from __future__ import division
 import cv2
 
 
@@ -45,16 +45,16 @@ class Gate:
         Returns:
             list -- Found data. None or list of cx1,cy1,cx2,cy2,area
         """
-        small_image = cv2.resize(img, None, fx=0.25, fy=0.25)
-        processed = self._process(small_image)
+        # small_image = cv2.resize(img, None, fx=0.25, fy=0.25)
+        processed = self._process(img)
         if showImg:
-            cv2.imshow(self.filename+' ct', processed[4])
+            cv2.imshow(str(self.filename)+' ct', processed[4])
         if processed[5] is not None:
             diff = self.calcDiffPercent(processed[5], self.last_detect)
             cond = self.last_detect is None or diff[0] < 0.4
             if cond:
                 self.last_detect = processed[5]
-        return self.last_detect
+        return (processed[5], processed[2])
 
     def _process(self, img):
         def my_area(ct):
@@ -66,7 +66,7 @@ class Gate:
         blured = cv2.medianBlur(img, k_size)
         gray = cv2.cvtColor(blured, cv2.COLOR_BGR2GRAY)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(
-            int(img_size[0]*0.15), int(img_size[0]*0.15)))
+            int(self.img_size[0]*0.15), int(self.img_size[0]*0.15)))
         gray = clahe.apply(gray)
 
         (_mu, sigma) = cv2.meanStdDev(gray)
@@ -80,8 +80,8 @@ class Gate:
                 if interest_area.sum()/interest_area.size > noise_thresh*0.8:
                     interest_area.fill(0)
 
-        cts, hi = cv2.findContours(edges, cv2.RETR_EXTERNAL,
-                                   cv2.CHAIN_APPROX_SIMPLE)
+        _, cts, hi = cv2.findContours(edges, cv2.RETR_EXTERNAL,
+                                      cv2.CHAIN_APPROX_SIMPLE)
         cts = sorted(cts, key=my_area, reverse=True)
         found = None
         withct = img.copy()
