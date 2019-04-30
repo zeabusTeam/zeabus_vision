@@ -7,8 +7,12 @@ from std_msgs.msg import Int64, Float64
 from sensor_msgs.msg import CompressedImage, Image
 from zeabus_utility.msg import VisionQualification
 from zeabus_utility.srv import VisionSrvQualification
+from image_lib import Image
+from constant import AnsiCode
+from vision_lib import OutputTools
 
-# from vision_lib import *
+image = Image()
+output = OutputTools()
 
 
 class Log:
@@ -25,15 +29,15 @@ def mission_callback(msg):
         Returns:
             a group of process value from this program
     """
-    # print_result('mission_callback', color_text.CYAN)
-
-    # task = msg.task.data
-    msg = message()
-    return msg
-
-    # print('task:', str(task))
-    # if task == 'casino_gate':
-    #     return find_gate()
+    if image.bgr is None:
+        output.img_is_none()
+        return message(state=-1)
+    task = str(msg.task.data)
+    request = str(msg.request.data)
+    if task == 'qualification' and request == 'gate':
+        return find_gate()
+    elif task == 'qualification' and request == 'marker':
+        return find_marker()
 
 
 def message(state=0, pos=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, area=0.0):
@@ -47,16 +51,38 @@ def message(state=0, pos=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, area=0.0):
     msg.area = Float64(area)
     return msg
 
+def get_mask():
+    image.to_hsv()
+    upper = np.array([72, 255, 255], dtype=np.uint8)
+    lower = np.array([28, 0, 0], dtype=np.uint8)
+    mask = cv.inRange(image.hsv, lower, upper)
+    return mask
+
+def get_obj(mask):
+    """
+        Filter some noise
+    """
+    return mask
+
+def find_gate():
+    mask = get_mask()
+    obj = get_obj(mask)
+    return message()
+
+
+def find_marker():
+    mask = get_mask()
+    obj = get_obj(mask)
+    return message()
+
 
 if __name__ == '__main__':
     rospy.init_node('vision_qualification', anonymous=False)
-    # print_result("INIT NODE", color_text.GREEN)
-    # image_topic = "/stereo/right/image_color/compressed"
-    # image_topic = get_topic("front", world)
-    # rospy.Subscriber(image_topic, CompressedImage, image_callback)
-    # print_result("INIT SUBSCRIBER", color_text.GREEN)
-    rospy.Service('vision/service/qualification',
+    output.log("INIT NODE", AnsiCode.GREEN)
+    rospy.Subscriber(image.topic('front'), CompressedImage, image.callback)
+    output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
+    rospy.Service('vision/qualification',
                   VisionSrvQualification(), mission_callback)
-    # print_result("INIT SERVICE", color_text.GREEN)
+    output.log("INIT SERVICE", AnsiCode.GREEN)
     rospy.spin()
-    # print_result("END PROGRAM", color_text.YELLOW_HL+color_text.RED)
+    output.log("END PROGRAM", AnsiCode.YELLOW_HL + AnsiCode.RED)
