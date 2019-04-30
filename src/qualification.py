@@ -7,9 +7,8 @@ from std_msgs.msg import Int64, Float64
 from sensor_msgs.msg import CompressedImage, Image
 from zeabus_utility.msg import VisionQualification
 from zeabus_utility.srv import VisionSrvQualification
-from image_lib import Image
 from constant import AnsiCode
-from vision_lib import OutputTools
+from vision_lib import OutputTools, Image
 
 image = Image()
 output = OutputTools()
@@ -51,6 +50,7 @@ def message(state=0, pos=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, area=0.0):
     msg.area = Float64(area)
     return msg
 
+
 def get_mask():
     image.to_hsv()
     upper = np.array([72, 255, 255], dtype=np.uint8)
@@ -58,11 +58,13 @@ def get_mask():
     mask = cv.inRange(image.hsv, lower, upper)
     return mask
 
+
 def get_obj(mask):
     """
         Filter some noise
     """
     return mask
+
 
 def find_gate():
     mask = get_mask()
