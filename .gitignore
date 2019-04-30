@@ -1,2 +1,5 @@
 # VSCODE workspace config
 .vscode
+
+# pyc
+*.pyc
