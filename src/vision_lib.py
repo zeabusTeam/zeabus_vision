@@ -7,25 +7,27 @@ from constant import AnsiCode
 
 
 class OutputTools():
-    def __init__():
-        self.color = AnsiCode()
+    def __init__(self):
+        pass
 
-    def print_result(msg, color=self.color.DEFAULT):
+    def log(self, msg, color=AnsiCode.DEFAULT):
         """
             print ('<----------') + str(msg) + ('---------->')
-            #len of <---msg---> = 50
+            #len of <---msg---> = 80
         """
-        print '<{:-^80}>'.format(' ' + color +
-                                 str(msg) + self.color.DEFAULT + ' ')
+        white_character = len(color) + 80
+        temp = '<{:-^' + str(white_character) + '}>'
+        print (temp.format(' ' + color +
+                                 str(msg) + AnsiCode.DEFAULT + ' '))
 
     def img_is_none(self):
-        print(self.color.RED + 'img is none.'+'\n'
+        print(AnsiCode.RED + 'img is none.'+'\n'
               'Please check topic name or check camera is running' +
-              self.color.DEFAULT)
+              AnsiCode.DEFAULT)
 
 
 class RosCmd():
-    def __init__():
+    def __init__(self):
         self.bridge = CvBridge()
 
     def publish_result(self, img, type, topic_name):
