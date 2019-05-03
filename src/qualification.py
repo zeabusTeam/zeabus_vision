@@ -4,13 +4,13 @@ import cv2 as cv
 import numpy as np
 from time import time
 from std_msgs.msg import Int64, Float64
-from sensor_msgs.msg import CompressedImage, Image
+from sensor_msgs.msg import CompressedImage
 from zeabus_utility.msg import VisionQualification
 from zeabus_utility.srv import VisionSrvQualification
 from constant import AnsiCode
-from vision_lib import OutputTools, Image
+from vision_lib import OutputTools, ImageTools
 
-image = Image()
+image = ImageTools()
 output = OutputTools()
 
 
@@ -67,14 +67,14 @@ def get_obj(mask):
 
 
 def find_gate():
-    mask = get_mask()
-    obj = get_obj(mask)
+    # mask = get_mask()
+    # obj = get_obj(mask)
     return message()
 
 
 def find_marker():
-    mask = get_mask()
-    obj = get_obj(mask)
+    # mask = get_mask()
+    # obj = get_obj(mask)
     return message()
 
 
