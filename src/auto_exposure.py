@@ -11,15 +11,38 @@ import os
 import rospy
 import cv2 as cv
 import numpy as np
+from time import sleep
 import matplotlib.pyplot as plt
-from statistics import Statistics
+from vision_lib import Statistics
 from sensor_msgs.msg import CompressedImage
 from dynamic_reconfigure.client import Client as Client
+
+class Log:
+    def __init__(self):
+        self.history = []
+
+    def append(self, bias):
+        if bias > 0:
+            pos = 'up'
+        elif bias == 0:
+            pos = '-'
+        elif bias < 0:
+            pos = 'down'
+        self.history.append(pos)
+        print(self.history)
+        if len(self.history) > 12:
+            self.history = self.history[-12:]
+
+    def sleep(self, time):
+        if self.history == ['down'] * 10 + ['up'] * 2:
+            print('sleep')
+            sleep(time)
 
 
 class AutoExposure:
     def __init__(self, namespace, debug=False):
         print(namespace)
+        self.log = Log()
         image_topic = rospy.get_param(namespace + "/topic")
         self.client_name = rospy.get_param(namespace + "/client")
         self.p_lower_nth_default = rospy.get_param(
@@ -133,16 +156,23 @@ class AutoExposure:
             current_p_lower = self.stat.get_percentile(gray, p_lower)
             current_p_upper = self.stat.get_percentile(gray, p_upper)
 
-            print('==' * 20)
-            print(th_p_lower, th_p_upper, ev)
-            print(current_p_lower, current_p_upper, ev)
+            # print('==' * 20)
+            # print(th_p_lower, th_p_upper, ev)
+            # print(current_p_lower, current_p_upper, ev)
 
+
+            bias_ev = 0.0
             if current_p_lower < th_p_lower:
                 self.set_param(ev + 0.04)
+                bias_ev += 0.04
             if current_p_upper > th_p_upper:
                 self.set_param(ev - 0.04)
+                bias_ev -= 0.04
+
+            self.log.append(current_ev-previous_ev)
 
             previous_ev = current_ev
+            self.log.sleep(10)
 
         if self.debug:
             plt.close()
