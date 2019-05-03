@@ -6,7 +6,7 @@ from sensor_msgs.msg import Image
 from constant import AnsiCode
 
 
-class OutputTools():
+class OutputTools:
     def __init__(self):
         pass
 
@@ -26,7 +26,7 @@ class OutputTools():
               AnsiCode.DEFAULT)
 
 
-class RosCmd():
+class RosCmd:
     def __init__(self):
         self.bridge = CvBridge()
 
@@ -45,7 +45,7 @@ class RosCmd():
         pub.publish(msg)
 
 
-class Image:
+class ImageTools:
     def __init__(self, sub_sampling=0.3):
         self.bgr = None
         self.display = None
@@ -78,7 +78,8 @@ class Image:
     def renew_display(self):
         self.display = self.bgr.copy()
 
-class Statistics():
+
+class Statistics:
     def __init__(self):
         pass
 

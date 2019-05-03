@@ -8,7 +8,6 @@
 """
 
 
-import os
 import rospy
 from auto_exposure import AutoExposure
 

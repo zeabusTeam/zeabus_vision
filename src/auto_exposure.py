@@ -17,6 +17,7 @@ from vision_lib import Statistics
 from sensor_msgs.msg import CompressedImage
 from dynamic_reconfigure.client import Client as Client
 
+
 class Log:
     def __init__(self):
         self.history = []
@@ -156,18 +157,14 @@ class AutoExposure:
             current_p_lower = self.stat.get_percentile(gray, p_lower)
             current_p_upper = self.stat.get_percentile(gray, p_upper)
 
-            # print('==' * 20)
-            # print(th_p_lower, th_p_upper, ev)
-            # print(current_p_lower, current_p_upper, ev)
+            print('==' * 20)
+            print(th_p_lower, th_p_upper, ev)
+            print(current_p_lower, current_p_upper, ev)
 
-
-            bias_ev = 0.0
             if current_p_lower < th_p_lower:
                 self.set_param(ev + 0.04)
-                bias_ev += 0.04
             if current_p_upper > th_p_upper:
                 self.set_param(ev - 0.04)
-                bias_ev -= 0.04
 
             self.log.append(current_ev-previous_ev)
 
