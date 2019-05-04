@@ -1,5 +1,6 @@
 # VSCODE workspace config
 .vscode
 
-# pyc
+# Python Cache
+__pycache__
 *.pyc
