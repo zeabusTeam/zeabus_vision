@@ -3,7 +3,7 @@
     File name: gate
     Author: Shayennn
     Date created: 2019/04/20
-    Python Version: 3.6
+    Python Version: 2.7
 """
 
 import cv2 as cv
@@ -13,12 +13,10 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CompressedImage, Image
 from zeabus_utility.srv import VisionGate, VisionGateResponse
 from gate_lib import Gate
+from vision_lib import ImageTools
 
-
-SUB_SAMPLING = 0.5
 PUBLIC_TOPIC = '/vision/mission/gate'
-# CAMERA_TOPIC = '/vision/front/image_rect_color/compressed'
-CAMERA_TOPIC = '/stereo/right/image_rect_color/compressed'
+CAMERA_TOPIC = ImageTools.topic('front')
 DEBUG = {
     'console': False
 }
