@@ -7,8 +7,9 @@ from constant import AnsiCode
 
 
 class OutputTools:
-    def __init__(self):
-        pass
+    def __init__(self, topic):
+        self.bridge = CvBridge()
+        self.topic = str(topic)
 
     def log(self, msg, color=AnsiCode.DEFAULT):
         """
@@ -25,24 +26,30 @@ class OutputTools:
               'Please check topic name or check camera is running' +
               AnsiCode.DEFAULT)
 
-
-class RosCmd:
-    def __init__(self):
-        self.bridge = CvBridge()
-
-    def publish_result(self, img, type, topic_name):
+    def publish(self, img, color, sub_topic):
         """
             publish picture
         """
         if img is None:
             img = np.zeros((200, 200))
-            type = "gray"
-        pub = rospy.Publisher(str(topic_name), Image, queue_size=10)
-        if type == 'gray':
+            color = "gray"
+        pub = rospy.Publisher(self.topic + str(sub_topic), Image, queue_size=10)
+        if color == 'gray':
             msg = self.bridge.cv2_to_imgmsg(img, "mono8")
-        elif type == 'bgr':
+        elif color == 'bgr':
             msg = self.bridge.cv2_to_imgmsg(img, "bgr8")
         pub.publish(msg)
+
+
+class TransformTools:
+    def __init__(self):
+        pass
+
+    def convert(self, inp, full):
+        inp = float(inp)
+        full = float(full)
+        res = (inp - (full / 2.0)) / (full / 2.0)
+        return res
 
 
 class ImageTools:
@@ -78,6 +85,42 @@ class ImageTools:
     def renew_display(self):
         self.display = self.bgr.copy()
 
+    def normalize(self, gray):
+        return np.uint8(255 * (gray - gray.min()) / (gray.max() - gray.min()))
+
+    def bg_subtraction(self, mode='neg', bg_blur_size=61, fg_blur_size=5):
+        """
+            new bg_subtraction
+            create by: skconan
+        """
+        self.to_gray()
+        bg = cv.medianBlur(self.gray, bg_blur_size)
+        fg = cv.medianBlur(self.gray, fg_blur_size)
+        sub_sign = np.int16(fg) - np.int16(bg)
+        if mode == 'neg':
+            sub_neg = np.clip(sub_sign.copy(), sub_sign.copy().min(), 0)
+            sub_neg = self.normalize(sub_neg)
+            _, obj = cv.threshold(
+                sub_neg, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+            return obj
+        if mode == 'pos':
+            sub_pos = np.clip(sub_sign.copy(), 0, sub_sign.copy().max())
+            sub_pos = self.normalize(sub_pos)
+            _, obj = cv.threshold(
+                sub_pos, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+            return obj
+        return self.gray
+
+    def get_kernel(self, shape='rect', ksize=(5, 5)):
+        if shape == 'rect':
+            return cv.getStructuringElement(cv.MORPH_RECT, ksize)
+        if shape == 'ellipse':
+            return cv.getStructuringElement(cv.MORPH_ELLIPSE, ksize)
+        if shape == 'plus':
+            return cv.getStructuringElement(cv.MORPH_CROSS, ksize)
+        return None
+
+
 
 class Statistics:
     def __init__(self):
@@ -94,9 +137,9 @@ class Statistics:
     def get_mode(self, data):
         data = self.convert_to_oneD(data)
         count = np.bincount(data)
-        max = count.max()
+        Max = count.max()
         count = list(count)
-        return count.index(max)
+        return count.index(Max)
 
     def get_median(self, data):
         return np.median(data)
