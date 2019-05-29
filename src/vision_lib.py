@@ -18,8 +18,8 @@ class OutputTools:
         """
         white_character = len(color) + 80
         temp = '<{:-^' + str(white_character) + '}>'
-        print (temp.format(' ' + color +
-                           str(msg) + AnsiCode.DEFAULT + ' '))
+        print(temp.format(' ' + color +
+                          str(msg) + AnsiCode.DEFAULT + ' '))
 
     def img_is_none(self):
         print(AnsiCode.RED + 'img is none.'+'\n'
@@ -33,7 +33,8 @@ class OutputTools:
         if img is None:
             img = np.zeros((200, 200))
             color = "gray"
-        pub = rospy.Publisher(self.topic + str(sub_topic), Image, queue_size=10)
+        pub = rospy.Publisher(self.topic + str(sub_topic),
+                              Image, queue_size=10)
         if color == 'gray':
             msg = self.bridge.cv2_to_imgmsg(img, "mono8")
         elif color == 'bgr':
@@ -119,7 +120,6 @@ class ImageTools:
         if shape == 'plus':
             return cv.getStructuringElement(cv.MORPH_CROSS, ksize)
         return None
-
 
 
 class Statistics:
