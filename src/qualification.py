@@ -3,7 +3,7 @@ import rospy
 import cv2 as cv
 import numpy as np
 from time import time
-from std_msgs.msg import Int64, Float64, Header
+from std_msgs.msg import Int64, Float64, Header, String
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Point
 from zeabus_utility.msg import VisionQualification
@@ -42,19 +42,19 @@ def mission_callback(msg):
         return find_marker()
 
 
-def message(state=0, seq=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0):
+def message(state=0, seq=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, name='qualification'):
     if state < 0:
         return VisionQualification()
-    point1 = transform.to_point(cx1, cy1, image.display.shape[:2])
-    point2 = transform.to_point(cx2, cy2, image.display.shape[:2])
+    
     msg = VisionQualification()
     header = Header()
     header.stamp = rospy.Time.now()
     header.seq = seq
     msg.header = header
     msg.type = Int64(state)
-    msg.point1 = point1
-    msg.point2 = point2
+    msg.name = String(name)
+    msg.point1 = transform.to_point(cx1, cy1, image.display.shape[:2])
+    msg.point2 = transform.to_point(cx2, cy2, image.display.shape[:2])
     print(msg)
     return msg
 
