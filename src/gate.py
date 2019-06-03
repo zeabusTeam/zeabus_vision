@@ -9,7 +9,7 @@ from gate_lib import Gate
 from vision_lib import ImageTools
 
 PUBLIC_TOPIC = '/vision/mission/gate'
-CAMERA_TOPIC = ImageTools.topic('front')
+CAMERA_TOPIC = ImageTools().topic('front')
 DEBUG = {
     'console': False
 }
