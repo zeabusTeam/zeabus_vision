@@ -1,11 +1,4 @@
 #!/usr/bin/python
-"""
-    File name: gate
-    Author: Shayennn
-    Date created: 2019/04/20
-    Python Version: 2.7
-"""
-
 import cv2 as cv
 
 import rospy

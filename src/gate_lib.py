@@ -1,6 +1,3 @@
-'''
-This is first script to detect gate in ROBOSub 2018.
-'''
 from __future__ import division
 import cv2
 
