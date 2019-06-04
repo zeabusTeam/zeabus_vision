@@ -199,21 +199,27 @@ def find_gate():
         horizontal_cy2.append((y + h / 2.))
 
     himg, wimg = image.bgr.shape[:2]
-    nv = len(vertical_pipe)
-    nh = len(horizontal_pipe)
-    print('v,h', nv, nh)
-    if nv == 0:
+    num_vertical = len(vertical_pipe)
+    num_horizontal = len(horizontal_pipe)
+    print('v,h', num_vertical, num_horizontal)
+    if num_vertical == 0 and num_horizontal == 0:
         output.log("NOT FOUND", AnsiCode.RED)
         output.publish(image.display, 'bgr', subtopic='display')
         output.publish(vertical, 'gray', subtopic='mask/vertical')
         output.publish(obj, 'gray', subtopic='mask')
         return message()
-    elif nv == 1:
-        output.log("FOUNG ONE POLE", AnsiCode.YELLOW)
+    elif num_vertical == 1 and num_horizontal == 0:
+        output.log("FOUND ONE V", AnsiCode.YELLOW)
         state = 1
-    elif nv == 2:
+    elif num_vertical == 1 and num_horizontal == 1:
+        output.log("FOUNG ONE V AND ONE H", AnsiCode.YELLOW)
+        state = 2 # or 4
+    elif num_vertical == 0 and num_horizontal == 1:
+        output.log("FOUNG ONE H", AnsiCode.YELLOW)
+        state = 3
+    elif num_vertical == 2:
         output.log("FOUND", AnsiCode.GREEN)
-        state = 2
+        state = 5
 
     cx1 = min(vertical_cx2)
     cx2 = max(vertical_cx1)
@@ -231,7 +237,7 @@ def find_gate():
     cv.circle(image.display, (int((cx1+cx2)/2), int((cy1+cy2)/2)),
               3, (0, 255, 255), -1)
 
-    area = 1.0*abs(cx2-cx1)*abs(cy2-cy1)/(himg*wimg)
+    # area = 1.0*abs(cx2-cx1)*abs(cy2-cy1)/(himg*wimg)
     output.publish(image.display, 'bgr', subtopic='display')
     output.publish(vertical, 'gray', subtopic='mask/vertical')
     output.publish(obj, 'gray', subtopic='mask')
