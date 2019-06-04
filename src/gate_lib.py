@@ -51,7 +51,7 @@ class Gate:
             cond = self.last_detect is None or diff[0] < 0.4
             if cond:
                 self.last_detect = processed[5]
-        return (processed[5], processed[2])
+        return (processed[5], processed[4])
 
     def _process(self, img):
         def my_area(ct):
@@ -69,7 +69,7 @@ class Gate:
         (_mu, sigma) = cv2.meanStdDev(gray)
         edges = cv2.Canny(img, _mu - 1.25*sigma, _mu + 1.25*sigma)
 
-        slide_box_size = int(img_size[0]*0.02)
+        slide_box_size = int(self.img_size[0]*0.02)
         noise_thresh = edges.sum()/edges.size
         if _mu > 127:
             for i in range(len(edges)-slide_box_size):
@@ -93,7 +93,7 @@ class Gate:
                          2*x/img.shape[1]-1, 2*(x+w)/img.shape[1]-1,
                          c_area/w/h)
                 diff = self.calcDiffPercent(found, self.last_detect)
-                cond = self.last_detect is None or diff[0] < 0.3
+                cond = self.last_detect is None or diff[0] < 0.5
                 if cond:
                     cv2.rectangle(withct, (x, y), (x+w, y+h), (255, 255, 0), 3)
                     cv2.circle(withct, (int(x+w/2), int(y+h/2)),

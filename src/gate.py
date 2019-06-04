@@ -8,11 +8,15 @@ from zeabus_utility.srv import VisionGate, VisionGateResponse
 from gate_lib import Gate
 from vision_lib import ImageTools
 
+SUB_SAMPLING = 0.5
 PUBLIC_TOPIC = '/vision/mission/gate'
 CAMERA_TOPIC = ImageTools().topic('front')
 DEBUG = {
-    'console': False
+    'console': False,
+    'oldbag': True
 }
+if DEBUG['oldbag']:
+    CAMERA_TOPIC = '/stereo/right/image_rect_color/compressed'
 
 process_obj = Gate()
 image = None
@@ -35,7 +39,7 @@ def find_gate():
     output = None
     if image is not None:
         output, img = process_obj.doProcess(image)
-        result_pub.publish(bridge.cv2_to_imgmsg(img))
+        result_pub.publish(bridge.cv2_to_imgmsg(img, encoding="bgr8"))
         if output is not None:
             output = [float(i) for i in output]
     else:
