@@ -15,6 +15,7 @@ from vision_lib import OutputTools, ImageTools, TransformTools
 image = ImageTools(sub_sampling=0.3)
 output = OutputTools(topic='/vision/qualification/')
 transform = TransformTools()
+seq = 1
 
 
 class Log:
@@ -42,14 +43,16 @@ def mission_callback(msg):
         return find_marker()
 
 
-def message(state=0, seq=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, name='qualification'):
+def message(state=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0,
+            name='qualification'):
+    global seq
     if state < 0:
         return VisionQualification()
-    
     msg = VisionQualification()
     header = Header()
     header.stamp = rospy.Time.now()
     header.seq = seq
+    seq += 1
     msg.header = header
     msg.type = Int64(state)
     msg.name = String(name)
@@ -75,7 +78,8 @@ def get_obj(mask, align='vertical'):
         mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     result = []
     for cnt in contours:
-        if not is_pipe(cnt, area_ratio_expected=0.3, wh_ratio_expected=5, align=align):
+        if not is_pipe(cnt, area_ratio_expected=0.3, wh_ratio_expected=5,
+                       align=align):
             continue
         (x, y), (w, h), angle = rect = cv.minAreaRect(cnt)
         w, h = max(w, h), min(w, h)
@@ -84,7 +88,6 @@ def get_obj(mask, align='vertical'):
         elif align == 'horizontal':
             print(rect)
             result.append([int(x), int(y), int(w), int(h), angle])
-
 
     if align == 'vertical':
         result = sorted(result, key=itemgetter(3), reverse=True)
@@ -207,8 +210,10 @@ def find_gate():
         return message()
     elif nv == 1:
         output.log("FOUNG ONE POLE", AnsiCode.YELLOW)
+        state = 1
     elif nv == 2:
         output.log("FOUND", AnsiCode.GREEN)
+        state = 2
 
     cx1 = min(vertical_cx2)
     cx2 = max(vertical_cx1)
@@ -230,7 +235,7 @@ def find_gate():
     output.publish(image.display, 'bgr', subtopic='display')
     output.publish(vertical, 'gray', subtopic='mask/vertical')
     output.publish(obj, 'gray', subtopic='mask')
-    return message()
+    return message(state=state)
     # return message(state=nv, cx1=cx1, cy1=cy1, cx2=cx2,
     #                cy2=cy2, area=area)
 
