@@ -44,7 +44,7 @@ def find_gate():
             output = [float(i) for i in output]
     else:
         _log('No input image', 'error')
-    if output is not None:
+    if image is not None and output is not None:
         last_found = output
         return [1]+last_found
     else:
