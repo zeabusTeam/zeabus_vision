@@ -1,11 +1,4 @@
 #!/usr/bin/python
-"""
-    File name: gate
-    Author: Shayennn
-    Date created: 2019/04/20
-    Python Version: 3.6
-"""
-
 import cv2 as cv
 
 import rospy
@@ -13,15 +6,17 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CompressedImage, Image
 from zeabus_utility.srv import VisionGate, VisionGateResponse
 from gate_lib import Gate
-
+from vision_lib import ImageTools
 
 SUB_SAMPLING = 0.5
 PUBLIC_TOPIC = '/vision/mission/gate'
-# CAMERA_TOPIC = '/vision/front/image_rect_color/compressed'
-CAMERA_TOPIC = '/stereo/right/image_rect_color/compressed'
+CAMERA_TOPIC = ImageTools().topic('front')
 DEBUG = {
-    'console': False
+    'console': False,
+    'oldbag': True
 }
+if DEBUG['oldbag']:
+    CAMERA_TOPIC = '/stereo/right/image_rect_color/compressed'
 
 process_obj = Gate()
 image = None
@@ -44,12 +39,12 @@ def find_gate():
     output = None
     if image is not None:
         output, img = process_obj.doProcess(image)
-        result_pub.publish(bridge.cv2_to_imgmsg(img))
+        result_pub.publish(bridge.cv2_to_imgmsg(img, encoding="bgr8"))
         if output is not None:
             output = [float(i) for i in output]
     else:
         _log('No input image', 'error')
-    if output is not None:
+    if image is not None and output is not None:
         last_found = output
         return [1]+last_found
     else:
