@@ -202,6 +202,16 @@ def find_gate():
     num_vertical = len(vertical_pipe)
     num_horizontal = len(horizontal_pipe)
     print('v,h', num_vertical, num_horizontal)
+    # cx1 = min(vertical_cx2)
+    # cx2 = max(vertical_cx1)
+    # cy1 = max(vertical_cy1)
+    # cy2 = min(vertical_cy2)
+
+    # cx1, cx2 = min(cx1, cx2), max(cx1, cx2)
+    # cy1, cy2 = min(cy1, cy2), max(cy1, cy2)
+
+    # cx1, cx2 = max(cx1, 0), min(cx2, wimg)
+    # cy1, cy2 = max(cy1, 0), min(cy2, himg)
     if num_vertical == 0 and num_horizontal == 0:
         output.log("NOT FOUND", AnsiCode.RED)
         output.publish(image.display, 'bgr', subtopic='display')
@@ -211,23 +221,38 @@ def find_gate():
     elif num_vertical == 1 and num_horizontal == 0:
         output.log("FOUND ONE V", AnsiCode.YELLOW)
         state = 1
+        cx1 = vertical_cx1[0]
+        cy1 = vertical_cy1[0]
+        cx2 = vertical_cx2[0]
+        cy2 = vertical_cy2[0]
     elif num_vertical == 1 and num_horizontal == 1:
         output.log("FOUNG ONE V AND ONE H", AnsiCode.YELLOW)
-        state = 2 # or 4
+        if vertical_cx1[0] < horizontal_cx1[0] :
+            state = 2 
+            cx1 = vertical_cx2[0]
+            cy1 = horizontal_cy2[0]
+            cx2 = wimg
+            cy2 = vertical_cy2[0]
+        else
+            state = 4 
+            cx1 = 0
+            cy1 = horizontal_cy2[0]
+            cx2 = vertical_cx1[0]
+            cy2 = vertical_cy1[0]
     elif num_vertical == 0 and num_horizontal == 1:
         output.log("FOUNG ONE H", AnsiCode.YELLOW)
         state = 3
+        cx1 = 0
+        cy1 = vertical_cy1[0]
+        cx2 = wimg
+        cy2 = vertical_cy2[0]
     elif num_vertical == 2:
         output.log("FOUND", AnsiCode.GREEN)
         state = 5
-
-    cx1 = min(vertical_cx2)
-    cx2 = max(vertical_cx1)
-    cy1 = max(vertical_cy1)
-    cy2 = min(vertical_cy2)
-
-    cx1, cx2 = min(cx1, cx2), max(cx1, cx2)
-    cy1, cy2 = min(cy1, cy2), max(cy1, cy2)
+        cx1 = min(vertical_cx1[0],vertical_cx1[1])
+        cy1 = horizontal_cy2[0]
+        cx2 = max(vertical_cx1[0],vertical_cx1[1])
+        cy2 = max(vertical_cy2[0],vertical_cy2[1])
 
     cx1, cx2 = max(cx1, 0), min(cx2, wimg)
     cy1, cy2 = max(cy1, 0), min(cy2, himg)
@@ -241,9 +266,9 @@ def find_gate():
     output.publish(image.display, 'bgr', subtopic='display')
     output.publish(vertical, 'gray', subtopic='mask/vertical')
     output.publish(obj, 'gray', subtopic='mask')
-    return message(state=state)
-    # return message(state=nv, cx1=cx1, cy1=cy1, cx2=cx2,
-    #                cy2=cy2, area=area)
+    # return message(state=state)
+    return message(state=state, cx1=cx1, cy1=cy1, cx2=cx2,
+                   cy2=cy2)
 
 
 def find_marker():
