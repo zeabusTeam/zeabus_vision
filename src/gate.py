@@ -13,7 +13,7 @@ PUBLIC_TOPIC = '/vision/mission/gate'
 CAMERA_TOPIC = ImageTools().topic('front')
 DEBUG = {
     'console': False,
-    'oldbag': True
+    'oldbag': False
 }
 if DEBUG['oldbag']:
     CAMERA_TOPIC = '/stereo/right/image_rect_color/compressed'
