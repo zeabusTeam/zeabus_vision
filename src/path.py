@@ -56,8 +56,6 @@ def get_mask():
     kernel = np.ones((5, 5), dtype=np.uint8)
     mask = cv.GaussianBlur(mask, (5, 5), 0)
     mask = cv.erode(mask, kernel)
-    mask = cv.erode(mask, kernel)
-    mask = cv.dilate(mask, kernel)
     mask = cv.dilate(mask, kernel)
     return mask
 
@@ -68,7 +66,7 @@ def get_obj(mask):
     for i in cnt :
         if cv.contourArea(i) < 200 :
             pass
-        else
+        else :
             x,y,w,h = cv2.boundingRect(i)
             t_top = x  
             b_top = x+(h/10)
@@ -90,7 +88,7 @@ def get_obj(mask):
             cy_bot = int(M_bot["m01"]/M_bot["m00"])
             rad_top = math.atan(abs(cy_top-cy_mid),abs(cx_top-cx_mid))
             rad_bot = math.atan(abs(cy_mid-cy_bot),abs(cx_mid-cx_bot))
-            if (rad_bot >= 35 and rad_bot <= 55 and rad_top >= 35 and rad_bot <= 55) 
+            if (rad_bot >= 35 and rad_bot <= 55 and rad_top >= 35 and rad_bot <= 55) :
                 return cx_top , cy_top , cx_mid , cy_mid , cx_bot , cy_bot
     return -1,-1,-1,-1,-1,-1 
 
