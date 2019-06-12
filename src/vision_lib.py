@@ -78,6 +78,31 @@ class ImageTools:
     def renew_display(self):
         self.display = self.bgr.copy()
 
+    def bg_subtraction(self, mode='neg', bg_blur_size=61, fg_blur_size=5):
+        """
+            new bg_subtraction
+            create by: skconan
+        """
+        self.to_gray()
+        bg = cv.medianBlur(self.gray, bg_blur_size)
+        fg = cv.medianBlur(self.gray, fg_blur_size)
+        sub_sign = np.int16(fg) - np.int16(bg)
+        if mode == 'neg':
+            sub_neg = np.clip(sub_sign.copy(), sub_sign.copy().min(), 0)
+            sub_neg = self.normalize(sub_neg)
+            _, obj = cv.threshold(
+                sub_neg, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+            return obj
+        if mode == 'pos':
+            sub_pos = np.clip(sub_sign.copy(), 0, sub_sign.copy().max())
+            sub_pos = self.normalize(sub_pos)
+            _, obj = cv.threshold(
+                sub_pos, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+            return obj
+        return self.gray
+        
+    def normalize(self, gray):
+        return np.uint8(255 * (gray - gray.min()) / (gray.max() - gray.min()))
 
 class Statistics:
     def __init__(self):
