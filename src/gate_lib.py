@@ -77,7 +77,7 @@ class Gate:
         bw_th3 = cv2.bitwise_and(th1, th3)
         kernel = np.ones((blur_k, blur_k), np.uint8)
         closing = cv2.morphologyEx(bw_th3, cv2.MORPH_CLOSE, kernel)
-        _, cts, hi = cv2.findContours(
+        cts, hi = cv2.findContours(
             closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         cts = sorted(cts, key=my_area, reverse=True)
         self.temp_img = img
