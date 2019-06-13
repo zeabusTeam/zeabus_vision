@@ -227,32 +227,40 @@ def find_gate():
         cy2 = vertical_cy2[0]
     elif num_vertical == 1 and num_horizontal == 1:
         output.log("FOUNG ONE V AND ONE H", AnsiCode.YELLOW)
-        if vertical_cx1[0] < horizontal_cx1[0] :
-            state = 2 
+        if vertical_cx1[0] < horizontal_cx1[0]:
+            state = 2
             cx1 = vertical_cx2[0]
             cy1 = horizontal_cy2[0]
             cx2 = wimg
             cy2 = vertical_cy2[0]
-        else
-            state = 4 
+        else:
+            state = 4
             cx1 = 0
             cy1 = horizontal_cy2[0]
             cx2 = vertical_cx1[0]
-            cy2 = vertical_cy1[0]
+            cy2 = vertical_cy2[0]
     elif num_vertical == 0 and num_horizontal == 1:
         output.log("FOUNG ONE H", AnsiCode.YELLOW)
         state = 3
         cx1 = 0
-        cy1 = vertical_cy1[0]
+        cy1 = horizontal_cy1[0]
         cx2 = wimg
-        cy2 = vertical_cy2[0]
-    elif num_vertical == 2:
-        output.log("FOUND", AnsiCode.GREEN)
+        cy2 = horizontal_cy2[0]
+    elif num_vertical == 2 and num_horizontal == 1:
+        output.log("FOUND TWO V", AnsiCode.YELLOW)
         state = 5
-        cx1 = min(vertical_cx1[0],vertical_cx1[1])
+        cx1 = min(vertical_cx2[0], vertical_cx2[1])
         cy1 = horizontal_cy2[0]
-        cx2 = max(vertical_cx1[0],vertical_cx1[1])
-        cy2 = max(vertical_cy2[0],vertical_cy2[1])
+        cx2 = max(vertical_cx1[0], vertical_cx1[1])
+        cy2 = max(vertical_cy2[0], vertical_cy2[1])
+    elif num_vertical == 2 and num_horizontal == 0:
+        output.log("FOUND GATE", AnsiCode.GREEN)
+        state = 5
+        cx1 = vertical_cx2[0]
+        cy1 = 0
+        cx2 = vertical_cx1[1]
+        cy2 = himg
+
 
     cx1, cx2 = max(cx1, 0), min(cx2, wimg)
     cy1, cy2 = max(cy1, 0), min(cy2, himg)
