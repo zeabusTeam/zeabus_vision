@@ -43,7 +43,7 @@ def mission_callback(msg):
         return find_marker()
 
 
-def message(state=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0,
+def message(state=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, area=0.0,
             name='qualification'):
     global seq
     if state < 0:
@@ -58,6 +58,7 @@ def message(state=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0,
     msg.name = String(name)
     msg.point1 = transform.to_point(cx1, cy1, image.display.shape[:2])
     msg.point2 = transform.to_point(cx2, cy2, image.display.shape[:2])
+    msg.area = Float64(area)
     print(msg)
     return msg
 
@@ -246,7 +247,7 @@ def find_gate():
         cy1 = horizontal_cy2[0]
         cx2 = horizontal_cx2[0]
         cy2 = himg
-    elif num_vertical == 2:
+    elif num_vertical == 2 and num_horizontal == 1:
         output.log("FOUND", AnsiCode.GREEN)
         state = 5
         cx1 = min(vertical_cx2[0],vertical_cx2[1])
@@ -270,13 +271,13 @@ def find_gate():
     cv.circle(image.display, (int((cx1+cx2)/2), int((cy1+cy2)/2)),
               3, (0, 255, 255), -1)
 
-    # area = 1.0*abs(cx2-cx1)*abs(cy2-cy1)/(himg*wimg)
+    area = 1.0*abs(cx2-cx1)*abs(cy2-cy1)/(himg*wimg)
     output.publish(image.display, 'bgr', subtopic='display')
     output.publish(vertical, 'gray', subtopic='mask/vertical')
     output.publish(obj, 'gray', subtopic='mask')
     # return message(state=state)
     return message(state=state, cx1=cx1, cy1=cy1, cx2=cx2,
-                   cy2=cy2)
+                   cy2=cy2, area=area)
 
 
 def find_marker():
