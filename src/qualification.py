@@ -233,8 +233,8 @@ def find_gate():
             cy1 = horizontal_cy2[0]
             cx2 = wimg
             cy2 = vertical_cy2[0]
-        else :
-            state = 4 
+        else:
+            state = 4
             cx1 = 0
             cy1 = horizontal_cy2[0]
             cx2 = vertical_cx1[0]
@@ -251,8 +251,16 @@ def find_gate():
         state = 5
         cx1 = min(vertical_cx2[0],vertical_cx2[1])
         cy1 = horizontal_cy2[0]
-        cx2 = max(vertical_cx1[0],vertical_cx1[1])
-        cy2 = max(vertical_cy2[0],vertical_cy2[1])
+        cx2 = max(vertical_cx1[0], vertical_cx1[1])
+        cy2 = max(vertical_cy2[0], vertical_cy2[1])
+    elif num_vertical == 2 and num_horizontal == 0:
+        output.log("FOUND GATE", AnsiCode.GREEN)
+        state = 5
+        cx1 = vertical_cx2[0]
+        cy1 = 0
+        cx2 = vertical_cx1[1]
+        cy2 = himg
+
 
     cx1, cx2 = max(cx1, 0), min(cx2, wimg)
     cy1, cy2 = max(cy1, 0), min(cy2, himg)
