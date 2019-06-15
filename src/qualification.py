@@ -228,8 +228,9 @@ def find_gate():
         cy2 = vertical_cy2[0]
     elif num_vertical == 1 and num_horizontal == 1:
         output.log("FOUNG ONE V AND ONE H", AnsiCode.YELLOW)
-        if vertical_cx1[0] < vertical_cx2[0] and vertical_cx1[0] < horizontal_cx1[0] :
-            state = 2 
+        if vertical_cx1[0] < vertical_cx2[0] \
+                and vertical_cx1[0] < horizontal_cx1[0]:
+            state = 2
             cx1 = vertical_cx2[0]
             cy1 = horizontal_cy2[0]
             cx2 = wimg
@@ -250,7 +251,7 @@ def find_gate():
     elif num_vertical == 2 and num_horizontal == 1:
         output.log("FOUND", AnsiCode.GREEN)
         state = 5
-        cx1 = min(vertical_cx2[0],vertical_cx2[1])
+        cx1 = min(vertical_cx2[0], vertical_cx2[1])
         cy1 = horizontal_cy2[0]
         cx2 = max(vertical_cx1[0], vertical_cx1[1])
         cy2 = max(vertical_cy2[0], vertical_cy2[1])
@@ -261,7 +262,6 @@ def find_gate():
         cy1 = 0
         cx2 = vertical_cx1[1]
         cy2 = himg
-
 
     cx1, cx2 = max(cx1, 0), min(cx2, wimg)
     cy1, cy2 = max(cy1, 0), min(cy2, himg)
@@ -281,9 +281,82 @@ def find_gate():
 
 
 def find_marker():
+    if image.bgr is None:
+        output.img_is_none()
+        return message(state=-1)
+
+    image.renew_display()
     mask = get_mask()
-    obj = get_obj(mask)
-    return message()
+    obj = mask
+
+    output.publish(obj, 'gray', subtopic='obj')
+    kernel_vertical = image.get_kernel(ksize=(1, 25))
+    vertical = cv.erode(obj.copy(), kernel_vertical)
+    kernel_box = image.get_kernel(ksize=(7, 7))
+    vertical = cv.dilate(vertical.copy(), kernel_box)
+    kernel_erode = image.get_kernel(ksize=(3, 11))
+    vertical = cv.erode(vertical.copy(), kernel_erode)
+
+    output.publish(vertical, 'gray', subtopic='mask/vertical')
+
+    vertical_pipe = get_obj(vertical, align='vertical')
+
+    vertical_cx1 = []
+    vertical_cx2 = []
+    vertical_cy1 = []
+    vertical_cy2 = []
+    print(vertical_pipe)
+    for res in vertical_pipe:
+        x, y, w, h, angle = res
+        cv.rectangle(image.display, (int(x - w / 2.), int(y - h / 2.)),
+                     (int(x + w / 2.), int(y + h / 2.)), (108, 105, 255), 2)
+        vertical_cx1.append((x - w / 2.))
+        vertical_cx2.append((x + w / 2.))
+        vertical_cy1.append((y - h / 2.))
+        vertical_cy2.append((y + h / 2.))
+
+    himg, wimg = image.bgr.shape[:2]
+    num_vertical = len(vertical_pipe)
+    print('v', num_vertical)
+
+    if num_vertical == 0:
+        output.log("NOT FOUND", AnsiCode.RED)
+        state = 0
+        output.publish(image.display, 'bgr', subtopic='display')
+        output.publish(vertical, 'gray', subtopic='mask/vertical')
+        output.publish(obj, 'gray', subtopic='mask')
+        return message()
+    elif num_vertical == 1:
+        state = 1
+        output.log("FOUND ONE V", AnsiCode.GREEN)
+    elif num_vertical == 2:
+        state = 2
+        output.log("FOUND TWO V", AnsiCode.YELLOW)
+    else:
+        state = 3
+        output.log("BUGGY", AnsiCode.RED)
+        return message()
+
+    cx1 = min(vertical_cx1)
+    cx2 = max(vertical_cx2)
+    cy1 = min(vertical_cy1)
+    cy2 = max(vertical_cy2)
+
+    cx1, cx2 = max(cx1, 0), min(cx2, wimg)
+    cy1, cy2 = max(cy1, 0), min(cy2, himg)
+
+    cv.rectangle(image.display, (int(cx1), int(cy1)),
+                 (int(cx2), int(cy2)), (0, 255, 0), 3)
+    cv.circle(image.display, (int((cx1+cx2)/2), int((cy1+cy2)/2)),
+              3, (0, 255, 255), -1)
+
+    area = 1.0*abs(cx2-cx1)*abs(cy2-cy1)/(himg*wimg)
+    output.publish(image.display, 'bgr', subtopic='display')
+    output.publish(vertical, 'gray', subtopic='mask/vertical')
+    output.publish(obj, 'gray', subtopic='mask')
+    # return message(state=state)
+    return message(state=state, cx1=cx1, cy1=cy1, cx2=cx2,
+                   cy2=cy2, area=area)
 
 
 if __name__ == '__main__':
