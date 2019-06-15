@@ -2,7 +2,9 @@ import cv2 as cv
 import rospy
 import numpy as np
 from cv_bridge import CvBridge
+from std_msgs.msg import Float64
 from sensor_msgs.msg import Image
+from geometry_msgs.msg import Point
 from constant import AnsiCode
 
 
@@ -18,23 +20,22 @@ class OutputTools:
         """
         white_character = len(color) + 80
         temp = '<{:-^' + str(white_character) + '}>'
-        print(temp.format(' ' + color +
-                          str(msg) + AnsiCode.DEFAULT + ' '))
+        print (temp.format(' ' + color +
+                           str(msg) + AnsiCode.DEFAULT + ' '))
 
     def img_is_none(self):
         print(AnsiCode.RED + 'img is none.'+'\n'
               'Please check topic name or check camera is running' +
               AnsiCode.DEFAULT)
 
-    def publish(self, img, color, sub_topic):
+    def publish(self, img, color, subtopic):
         """
             publish picture
         """
         if img is None:
             img = np.zeros((200, 200))
             color = "gray"
-        pub = rospy.Publisher(self.topic + str(sub_topic),
-                              Image, queue_size=10)
+        pub = rospy.Publisher(self.topic + str(subtopic), Image, queue_size=10)
         if color == 'gray':
             msg = self.bridge.cv2_to_imgmsg(img, "mono8")
         elif color == 'bgr':
@@ -52,6 +53,13 @@ class TransformTools:
         res = (inp - (full / 2.0)) / (full / 2.0)
         return res
 
+    def to_point(self, x, y, shape, z=0.0):
+        himg, wimg = shape[:2]
+        point = Point()
+        point.x = float(self.convert(x, wimg))
+        point.y = float(-1.0*self.convert(y, himg))
+        point.z = float(z)
+        return point
 
 class ImageTools:
     def __init__(self, sub_sampling=0.3):
@@ -96,6 +104,7 @@ class ImageTools:
         """
         self.to_gray()
         bg = cv.medianBlur(self.gray, bg_blur_size)
+        OutputTools(topic='/test/').publish(bg, 'gray', 'bg')
         fg = cv.medianBlur(self.gray, fg_blur_size)
         sub_sign = np.int16(fg) - np.int16(bg)
         if mode == 'neg':
