@@ -25,7 +25,7 @@
         <param name="camera_name" type="str" value="$(arg camera_name)" />
         <param name="camera_topic" type="str" value="$(arg camera_topic)" />
         <param name="camera_id" type="int" value="$(arg camera_id)" />
-        <param name="camera_intrinsics_file" type="str" value="$(find zeabus_vision)/camera_info/intrinsics/ost.yaml"/>
+        <param name="camera_intrinsics_file" type="str" value="$(find zeabus_vision)/camera_info/intrinsics/ost1.yaml"/>
         <param name="image_width" type="int" value="$(arg image_width)" />
         <param name="image_height" type="int" value="$(arg image_height)" />
         <param name="color_mode" type="str" value="$(arg color_mode)" />
