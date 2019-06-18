@@ -81,7 +81,7 @@ def main():
     global result_pub
     rospy.init_node('vision_gate')
     if not rospy.is_shutdown():
-        rospy.Service('gate_service', VisionGate(), gate_callback)
+        rospy.Service('/vision/gate', VisionGate(), gate_callback)
         result_pub = rospy.Publisher(
             PUBLIC_TOPIC+'/result', Image, queue_size=10)
         rospy.Subscriber(CAMERA_TOPIC, CompressedImage, imageCallback)
