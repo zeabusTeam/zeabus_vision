@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <!-- REFERENCE WEBSITE IS http://wiki.ros.org/rosbag/Commandline -->
+
+    <arg name="node_name" default="node_record"/>
+
+    <arg name="zeabus_camera_image"
+        default="/vision/front/image_rect_color/compressed /vision/bottom/image_raw/compressed"/>
+
+    <arg name="zeabus_camera_info"
+        default=""/>
+
+    <arg name="arg_specific_topic"
+        default=""/> 
+
+    <arg name="arg_topic" default="-a"/>
+
+    <arg name="arg_exclude" default="/vision(.*)"/>
+
+    <arg name="arg_split" default="--duration=10m"/>
+
+    <arg name="arg_buffer_size" default="1024"/>
+
+    <arg name="arg_chunksize" default="50000"/>
+
+    <arg name="arg_prefix_name" default="zeabus_bag"/>
+
+    <node pkg="rosbag" type="record" name="$(arg node_name)" output="screen"
+        args="$(arg arg_topic) -x $(arg arg_exclude) --split $(arg arg_split) -b $(arg arg_buffer_size) --chunksize=$(arg arg_chunksize) -o $(arg arg_prefix_name) $(arg arg_specific_topic) $(arg zeabus_camera_image) $(arg zeabus_camera_info)">
+    </node>
+
+</launch>
