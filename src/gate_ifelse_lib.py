@@ -9,7 +9,8 @@ class GateCheck:
         x, y, w, h = cv2.boundingRect(ct)
         ct_area = cv2.contourArea(ct)
         objAreaRatio = ct_area/float(w*h)
-        ratioCond = (h*2 > 0.9*w) and (h*2 < 1.1*w)
+        ratioCond = ((h*2 > 0.9*w) and (h*2 < 1.1*w)
+                     ) or ((h > 0.85*w) and (h < 1.15*w))
         if img_size is None:
             sizeCond = True
         else:
