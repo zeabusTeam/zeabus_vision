@@ -8,7 +8,7 @@ from zeabus_utility.srv import VisionGate, VisionGateResponse
 from gate_lib import Gate
 from vision_lib import ImageTools
 
-SUB_SAMPLING = 0.5
+SUB_SAMPLING = 1
 PUBLIC_TOPIC = '/vision/mission/gate'
 CAMERA_TOPIC = ImageTools().topic('front')
 DEBUG = {
