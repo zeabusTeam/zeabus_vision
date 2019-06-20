@@ -121,7 +121,7 @@ class Gate:
             x, y, w, h = cv2.boundingRect(ct)
             # mini = gray[y:y+h, x:x+w]
             # prepared = self.prepareData(mini)
-            if self.GateCond.predict(ct, gray.size) == 1:
+            if self.GateCond.predict(ct, gray.shape) == 1:
                 # color = (0, 255, 0)
                 outputs.append(ct)
             # else:
