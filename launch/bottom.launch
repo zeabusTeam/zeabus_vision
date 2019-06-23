@@ -43,6 +43,10 @@
         <param name="flip_lr" type="bool" value="$(arg flip_lr)" />
     </node>
 
+    <!-- <node pkg="nodelet" type="nodelet" name="rectify_color" args="load image_proc/rectify $(arg nodelet_manager_name)">
+        <remap from="image_rect" to="/$(arg camera_name)/image_rect_color" />
+    </node> -->
+
     <arg name="place" value="ku"/>
     <rosparam ns="auto_exposure_bottom" command="load" file="$(find zeabus_vision)/camera_info/$(arg place)/bottom/exposure.yaml"/>
     <node pkg="zeabus_vision" name="auto_exposure_bottom" type="auto_exposure_bottom.py" output="screen">
