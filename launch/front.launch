@@ -44,7 +44,9 @@
         <param name="flip_lr" type="bool" value="$(arg flip_lr)" />
     </node>
 
-    <node pkg="image_proc" name="image_proc" type="image_proc" output="screen" ns="/vision/front"></node>
+    <node pkg="nodelet" type="nodelet" name="rectify_color" args="load image_proc/rectify $(arg nodelet_manager_name)">
+        <remap from="image_rect" to="/$(arg camera_name)/image_rect_color" />
+    </node>
 
     <arg name="place" value="ku"/>
     <rosparam ns="auto_exposure_front" command="load" file="$(find zeabus_vision)/camera_info/$(arg place)/front/exposure.yaml"/>
