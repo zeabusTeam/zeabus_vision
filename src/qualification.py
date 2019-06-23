@@ -224,7 +224,7 @@ def find_gate():
         state = 1
         cx1 = vertical_cx1[0]
         cy1 = vertical_cy1[0]
-        cx2 = wimg
+        cx2 = vertical_cx2[0]
         cy2 = vertical_cy2[0]
     elif num_vertical == 1 and num_horizontal == 1:
         output.log("FOUNG ONE V AND ONE H", AnsiCode.YELLOW)
@@ -271,7 +271,7 @@ def find_gate():
     cv.circle(image.display, (int((cx1+cx2)/2), int((cy1+cy2)/2)),
               3, (0, 255, 255), -1)
 
-    area = 1.0*abs(cx2-cx1)*abs(cy2-cy1)/(himg*wimg)
+    area = (1.0*abs(cx2-cx1)*abs(cy2-cy1))/(himg*wimg)
     output.publish(image.display, 'bgr', subtopic='display')
     output.publish(vertical, 'gray', subtopic='mask/vertical')
     output.publish(obj, 'gray', subtopic='mask')
@@ -350,7 +350,8 @@ def find_marker():
     cv.circle(image.display, (int((cx1+cx2)/2), int((cy1+cy2)/2)),
               3, (0, 255, 255), -1)
 
-    area = 1.0*abs(cx2-cx1)*abs(cy2-cy1)/(himg*wimg)
+    # area = (1.0*abs(cx2-cx1)*abs(cy2-cy1))/(himg*wimg)
+    area = 1.0*abs(cx2-cx1)/wimg
     output.publish(image.display, 'bgr', subtopic='display')
     output.publish(vertical, 'gray', subtopic='mask/vertical')
     output.publish(obj, 'gray', subtopic='mask')
