@@ -363,7 +363,7 @@ def find_marker():
 if __name__ == '__main__':
     rospy.init_node('vision_qualification', anonymous=False)
     output.log("INIT NODE", AnsiCode.GREEN)
-    rospy.Subscriber(image.topic('front'), CompressedImage, image.callback)
+    rospy.Subscriber('vision/front/image_raw/compressed', CompressedImage, image.callback)
     output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
     rospy.Service('vision/qualification',
                   VisionSrvQualification(), mission_callback)
