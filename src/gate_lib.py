@@ -1,6 +1,7 @@
 from __future__ import division
 import cv2
 import numpy as np
+from gate_ml_lib import GateML
 from gate_ifelse_lib import GateCheck
 
 
@@ -11,7 +12,10 @@ class Gate:
         fileOrDevice (str,int): you can send this to OpenCV to open
     '''
 
+    useml = False
+
     def __init__(self, fileToOpen=None):
+        self.GateML = GateML()
         self.GateCond = GateCheck()
         if fileToOpen is not None:
             self.device = cv2.VideoCapture(fileToOpen)
@@ -108,7 +112,7 @@ class Gate:
         return tuple(res)
 
     def prepareData(self, gray):
-        data_t = cv2.resize(gray, (20, 20))
+        data_t = cv2.resize(gray, (40, 20))
         return data_t
 
     def FindGateFromGates(self, cts, gray):
@@ -119,11 +123,18 @@ class Gate:
         outputs = []
         for i, ct in enumerate(cts):
             x, y, w, h = cv2.boundingRect(ct)
-            # mini = gray[y:y+h, x:x+w]
-            # prepared = self.prepareData(mini)
-            if self.GateCond.predict(ct, gray.shape) == 1:
-                # color = (0, 255, 0)
-                outputs.append(ct)
+            if self.useml:
+                only_ct = np.zeros_like(gray, 'uint8')
+                cv2.fillPoly(only_ct, pts=[ct], color=255)
+                mini = only_ct[y:y+h, x:x+w]
+                prepared = self.prepareData(mini)
+                if self.GateML.predict(prepared) == 1:
+                    # color = (0, 255, 0)
+                    outputs.append(ct)
+            else:
+                if self.GateCond.predict(ct, gray.shape) == 1:
+                    # color = (0, 255, 0)
+                    outputs.append(ct)
             # else:
             #     color = (255, 0, 255)
             # cv2.rectangle(opt, (x, y), (x+w, y+h), color, 2)
