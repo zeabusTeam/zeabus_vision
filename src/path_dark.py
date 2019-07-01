@@ -93,9 +93,11 @@ def get_obj(mask):
     turn_point = 0
     old_ang = 0
     himg, wimg = mask.shape[:2]
-    # cnt = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0]
+    cnt = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0]
+    if len(cnt) == 0:
+		return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     cnt = max(cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0],key=cv.contourArea)
-    if cnt == [] and cv.contourArea(cnt) < 300:
+    if cv.contourArea(cnt) < 1500:
     	return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     x,y,w,h = cv.boundingRect(cnt)
     if h < w*3/4 :
@@ -165,10 +167,10 @@ def get_obj(mask):
         cy2 = cy[turn_point]
         crop_top = mask[y:cy2,x:x+w]
         cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0],key=cv.contourArea)
-        area1 = cv.contourArea(cnt_top)/(himg*wimg)
+        area2 = cv.contourArea(cnt_top)/(himg*wimg)
         crop_bot = mask[cy2:y+h,x:x+w]
         cnt_bot = max(cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0],key=cv.contourArea)
-        area2 = cv.contourArea(cnt_bot)/(himg*wimg)
+        area1 = cv.contourArea(cnt_bot)/(himg*wimg)
         cv.rectangle(mask,(x,y),(x+w,cy2),(255,255,255),2)
         cv.rectangle(mask,(x,cy2),(x+w,y+h),(255,255,255),2)
     if cx1 > wimg : 
