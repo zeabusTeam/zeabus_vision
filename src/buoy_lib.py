@@ -1,5 +1,6 @@
 from __future__ import division
 import cv2
+import os
 from sklearn.cluster import DBSCAN
 import numpy as np
 
@@ -13,9 +14,9 @@ class SourceIsNotOpened(VisionException):
 
 
 class BuoyReturn:
-    cx = None
-    cy = None
-    score = 1
+    cx = 0.0
+    cy = 0.0
+    score = 0
     area = -1
     result_img = None
 
@@ -36,7 +37,8 @@ class Buoy:
 
     def __init__(self):
         # Load Ref img
-        jiangshi = cv2.imread('jiangshi.jpg', 0)
+        filedir = os.path.dirname(os.path.abspath(__file__))
+        jiangshi = cv2.imread(os.path.join(filedir, 'jiangshi.jpg'), 0)
         jiangshi = cv2.resize(jiangshi, None, fx=0.3, fy=0.3)
         self.jiangshi = cv2.medianBlur(jiangshi, 3)
         self.sift = cv2.xfeatures2d.SIFT_create()
@@ -108,6 +110,8 @@ class Buoy:
         grouped = self.filterByLabels(points, labels)
 
         if len(grouped) == 0:
+            result.result_img = self.drawDebug(
+                kp, matches, labels, matchesMask)
             return result
 
         grouped = sorted(grouped, key=lambda (a, b): len(b), reverse=True)
@@ -122,7 +126,7 @@ class Buoy:
         rect = cv2.boundingRect(np.array(grouped[0][1]))
 
         result.result_img = self.drawDebug(
-            kp, matches, labels, points, matchesMask, rect, ct)
+            kp, matches, labels, matchesMask, points, rect, ct)
         result.cx = 2*ct[0]/self.img_gray.shape[1]-1
         result.cy = 2*ct[1]/self.img_gray.shape[0]-1
         result.score = len(grouped[0][1])/len(points)
@@ -136,19 +140,24 @@ class Buoy:
         return [(label, [points[i] for i, lb in enumerate(labels) if lb == label])
                 for label in u_labels]
 
-    def drawDebug(self, kp, matches, labels, points, matchesMask, rect, ct):
+    def drawDebug(self, kp, matches, labels, matchesMask, points=None, rect=None, ct=None):
         gray = self.img_gray.copy()
-        x, y, w, h = rect
-        ct = tuple([int(a) for a in ct])
-        cv2.rectangle(gray, (x, y), (x+w, y+h), 0, 3)
+        if rect is not None:
+            x, y, w, h = rect
+            cv2.rectangle(gray, (x, y), (x+w, y+h), 0, 3)
+        if ct is not None:
+            ct = tuple([int(a) for a in ct])
+            cv2.drawMarker(gray, ct, 0, cv2.MARKER_TILTED_CROSS, 50, 10)
+        if points is not None:
+            for i, pt in enumerate(points):
+                if labels[i] != -1:
+                    cv2.drawMarker(
+                        gray, pt, 0, cv2.MARKER_TRIANGLE_DOWN, 30, 10)
+
         draw_params = dict(matchColor=(0, 255, 0),
                            singlePointColor=(255, 0, 0),
                            matchesMask=matchesMask,
                            flags=0)
-        for i, pt in enumerate(points):
-            if labels[i] != -1:
-                cv2.drawMarker(gray, pt, 0, cv2.MARKER_TRIANGLE_DOWN, 30, 10)
-        cv2.drawMarker(gray, ct, 0, cv2.MARKER_TILTED_CROSS, 50, 10)
         flann_matches = cv2.drawMatchesKnn(
             self.jiangshi, self.ori_kp, gray, kp, matches, None, **draw_params)
         if sum(labels) != -len(labels):
