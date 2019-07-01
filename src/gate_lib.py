@@ -79,10 +79,10 @@ class Gate:
                                     255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                     cv2.THRESH_BINARY_INV, blur_k*4+1, 2)
         bw_th3 = cv2.bitwise_and(th1, th3)
-        kernel = np.ones((blur_k, blur_k), np.uint8)
+        kernel = np.ones((5, 5), np.uint8)
         closing = cv2.morphologyEx(bw_th3, cv2.MORPH_CLOSE, kernel)
-        cts, hi = cv2.findContours(
-            closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        _, cts, hi = cv2.findContours(
+               closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         cts = sorted(cts, key=my_area, reverse=True)
         self.temp_img = img
         filtered = self.FindGateFromGates(cts, gray)

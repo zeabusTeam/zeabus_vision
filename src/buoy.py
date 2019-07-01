@@ -36,7 +36,6 @@ def imageCallback(msg):
 
 def find_buoy():
     global image, last_found, result_pub, bridge
-    output = None
     if image is not None:
         process_obj.openSource(process_obj.SOURCE_TYPE['SINGLE_IMG'], image)
         process_obj.read()
@@ -47,7 +46,7 @@ def find_buoy():
                 res.result_img, encoding="bgr8"))
     else:
         _log('No input image', 'error')
-    if image is not None and output is not None:
+    if image is not None and res.score > 0:
         last_found = res
         return [1, res]
     else:

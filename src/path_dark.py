@@ -93,10 +93,10 @@ def get_obj(mask):
     turn_point = 0
     old_ang = 0
     himg, wimg = mask.shape[:2]
-    cnt = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0]
+    cnt = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
     if len(cnt) == 0:
 		return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    cnt = max(cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0],key=cv.contourArea)
+    cnt = max(cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
     if cv.contourArea(cnt) < 1500:
     	return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     x,y,w,h = cv.boundingRect(cnt)
@@ -112,7 +112,7 @@ def get_obj(mask):
         # print y_top_crop
         # print y_bot_crop
         crop = mask[y_top_crop:y_bot_crop,x:x+w]
-        cnt_crop = max(cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0],key=cv.contourArea)
+        cnt_crop = max(cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
         # cv.rectangle(mask,(x,y_top_crop),(x+w,y_bot_crop),(255,255,255),2)
         M = cv.moments(cnt_crop)
         if M["m00"] != 0 :
@@ -152,10 +152,10 @@ def get_obj(mask):
     else :
         n_point = 3
         # crop_top = mask[y:y+(turn_point*h/10),x:x+w]
-        # cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0],key=cv.contourArea)
+        # cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
         # area1 = cv.contourArea(cnt_top)/(himg*wimg)
         # crop_bot = mask[y+(turn_point*h/10):y+h,x:x+w]
-        # cnt_bot = max(cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0],key=cv.contourArea)
+        # cnt_bot = max(cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
         # area2 = cv.contourArea(cnt_bot)/(himg*wimg)
         # cv.rectangle(mask,(x,y),(x+w,y+(turn_point*h/10)),(255,255,255),2)
         # cv.rectangle(mask,(x,y+(turn_point*h/10)),(x+w,y+h),(255,255,255),2)
@@ -166,10 +166,10 @@ def get_obj(mask):
         cx2 = cx[turn_point]
         cy2 = cy[turn_point]
         crop_top = mask[y:cy2,x:x+w]
-        cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0],key=cv.contourArea)
+        cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
         area2 = cv.contourArea(cnt_top)/(himg*wimg)
         crop_bot = mask[cy2:y+h,x:x+w]
-        cnt_bot = max(cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[0],key=cv.contourArea)
+        cnt_bot = max(cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
         area1 = cv.contourArea(cnt_bot)/(himg*wimg)
         cv.rectangle(mask,(x,y),(x+w,cy2),(255,255,255),2)
         cv.rectangle(mask,(x,cy2),(x+w,y+h),(255,255,255),2)
@@ -212,9 +212,9 @@ def get_obj(mask):
             # crop_t = mask[t_top:b_top,x:x+w]
             # crop_m = mask[t_mid:b_mid,x:x+w]
             # crop_b = mask[t_bot:b_bot,x:x+w]
-            # c_top = cv.findContours(crop_t, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
-            # c_middle = cv.findContours(crop_m, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
-            # c_bottom = cv.findContours(crop_b, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+            # c_top = cv.findContours(crop_t, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[2]
+            # c_middle = cv.findContours(crop_m, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[2]
+            # c_bottom = cv.findContours(crop_b, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[2]
             # M_top = cv.moment(c_top)
             # M_bottom = cv.moment(c_middle)
             # M_bot = cv.moments(c_bottom)
@@ -230,8 +230,8 @@ def get_obj(mask):
             #         if math.atan2(cy_top - cy_bot, abs(cx_top - cx_bot)) * 180 / math.PI;
             #     crop_top = mask[y:y+h/2,x:x+w]
             #     crop_bot = mask[y+h/2:y+h,w:x+w]
-            #     cnt_top = cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
-            #     cnt_bot = cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+            #     cnt_top = cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[2]
+            #     cnt_bot = cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[2]
             #     area1 = cv.contourArea(cnt_bot)/(himg*wimg)
             #     area2 = cv.contourArea(cnt_top)/(himg*wimg)
             #     if math.sqrt((((cx_top-cx_bot)**2) + ((cy_top-cy_bot)**2))) >= 45 and math.sqrt((((cx_top-cx_bot)**2) + ((cy_top-cy_bot)**2))) <= 49 :

@@ -23,7 +23,7 @@ class BuoyReturn:
 
 class Buoy:
 
-    lockX = 600
+    lockX = 750
     MIN_POINTS = 6
 
     SOURCE_TYPE = {
@@ -130,6 +130,7 @@ class Buoy:
         result.cx = 2*ct[0]/self.img_gray.shape[1]-1
         result.cy = 2*ct[1]/self.img_gray.shape[0]-1
         result.score = len(grouped[0][1])/len(points)
+        result.area = rect[2]*rect[3]/self.img_gray.shape[0]/self.img_gray.shape[1]
         return result
 
     def filterByLabels(self, points, labels):
