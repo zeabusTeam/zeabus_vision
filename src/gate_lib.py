@@ -58,7 +58,7 @@ class Gate:
             cond = self.last_detect is None or diff[0] < 0.2
             if cond:
                 self.last_detect = processed[6]
-        return (processed[6], processed[5])
+        return (processed[6], processed[5], processed[4])
 
     def _process(self, img):
         def my_area(ct):
