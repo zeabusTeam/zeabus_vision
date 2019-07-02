@@ -59,8 +59,10 @@ def gate_callback(msg):
     res = VisionGateResponse()
     if DEBUG['console'] or task == '':
         print('Service called', task, req)
-    if task == 'ml':
+    if req == 'ml':
         process_obj.useml = True
+    if req == 'if':
+        process_obj.useml = False
     if task in ['gate', '']:
         find_result = find_gate()
         res.found = find_result[0]
