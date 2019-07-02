@@ -49,7 +49,7 @@ class Gate:
         Returns:
             list -- Found data. None or list of cx1,cy1,cx2,cy2,area
         """
-        img = cv2.resize(img, None, fx=0.25, fy=0.25)
+        img = cv2.resize(img, None, fx=0.50, fy=0.50)
         processed = self._process(img)
         if showImg:
             # cv2.imshow(str(self.filename)+' ct', processed[1])
@@ -70,16 +70,17 @@ class Gate:
             return w*h
         self.img_size = img.shape[0:2]
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        blur_k = int(self.img_size[0]/90)
+        gray = cv2.equalizeHist(gray)
+        blur_k = int(self.img_size[0]/150)
         blur_k += (blur_k+1) % 2
         noise_removed = cv2.medianBlur(gray, blur_k)
         ret, th1 = cv2.threshold(
-            noise_removed, 127*0.9, 255, cv2.THRESH_BINARY_INV)
+            noise_removed, 20, 255, cv2.THRESH_BINARY_INV)
         th3 = cv2.adaptiveThreshold(noise_removed,
                                     255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                     cv2.THRESH_BINARY_INV, blur_k*4+1, 2)
         bw_th3 = cv2.bitwise_and(th1, th3)
-        kernel = np.ones((5, 5), np.uint8)
+        kernel = np.ones((blur_k*2, blur_k*2), np.uint8)
         closing = cv2.morphologyEx(bw_th3, cv2.MORPH_CLOSE, kernel)
         _, cts, hi = cv2.findContours(
                closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
