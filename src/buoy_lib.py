@@ -128,7 +128,7 @@ class Buoy:
         result.result_img = self.drawDebug(
             kp, matches, labels, matchesMask, points, rect, ct)
         result.cx = 2*ct[0]/self.img_gray.shape[1]-1
-        result.cy = 2*ct[1]/self.img_gray.shape[0]-1
+        result.cy = 1-2*ct[1]/self.img_gray.shape[0]
         result.score = len(grouped[0][1])/len(points)
         result.area = rect[2]*rect[3]/self.img_gray.shape[0]/self.img_gray.shape[1]
         return result
