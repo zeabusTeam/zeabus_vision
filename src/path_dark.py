@@ -135,10 +135,17 @@ def get_obj(mask):
         angle.append(ang_crop)
         diff = ang_crop - old_ang
         # print ("now = " + str(ang_crop) + " pass = " + str(old_ang) + " diff = " + str(diff))
-        if (i > 2) and (abs(ang_crop - old_ang) > 20):
-            # print ("turning point" + str(i-1))
+        if (i > 2) and (abs(ang_crop - old_ang) > 20) :
             turn_point = i-1
         old_ang = ang_crop
+    if turn_point != 0 :
+        first_ang = math.atan2(cy[1]-cy[turn_point],cx[1]-cx[turn_point])
+        first_ang = math.degrees(first_ang)
+        last_ang = math.atan2(cy[turn_point]-cy[10],cx[turn_point]-cx[10])
+        last_ang = math.degrees(last_ang)
+        # print ("f - l = " + str((abs(first_ang - last_ang))))
+        if (abs(first_ang - last_ang) < 34) :
+            turn_point = 0
     if turn_point == 0 :
         n_point = 2
         area1 = cv.contourArea(cnt)/(himg*wimg)
@@ -173,6 +180,7 @@ def get_obj(mask):
         area1 = cv.contourArea(cnt_bot)/(himg*wimg)
         cv.rectangle(mask,(x,y),(x+w,cy2),(255,255,255),2)
         cv.rectangle(mask,(x,cy2),(x+w,y+h),(255,255,255),2)
+    
     if cx1 > wimg : 
         cx1 = wimg 
     elif cx1 < 0 :
