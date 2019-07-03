@@ -100,8 +100,8 @@ def get_obj(mask):
     if cv.contourArea(cnt) < 1500:
     	return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     x,y,w,h = cv.boundingRect(cnt)
-    if h < w*3/4 :
-    	return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+    #if h < w*3/4 :
+    	#return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     # cv.rectangle(mask,(x,y),(x+w,y+h),(255,255,255),2)
     y_bot_crop = y
     for i in range (1,11) :
@@ -144,7 +144,7 @@ def get_obj(mask):
         last_ang = math.atan2(cy[turn_point]-cy[10],cx[turn_point]-cx[10])
         last_ang = math.degrees(last_ang)
         # print ("f - l = " + str((abs(first_ang - last_ang))))
-        if (abs(first_ang - last_ang) < 34) :
+        if (abs(first_ang - last_ang) < 25) :
             turn_point = 0
     if turn_point == 0 :
         n_point = 2
