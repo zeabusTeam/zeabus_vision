@@ -3,6 +3,7 @@ import cv2
 import os
 from sklearn.cluster import DBSCAN
 import numpy as np
+import time
 
 
 class VisionException(Exception):
@@ -14,6 +15,7 @@ class SourceIsNotOpened(VisionException):
 
 
 class BuoyReturn:
+    time = 0.0
     cx = 0.0
     cy = 0.0
     score = 0
@@ -24,7 +26,7 @@ class BuoyReturn:
 class Buoy:
 
     lockX = 750
-    MIN_POINTS = 6
+    MIN_POINTS = 5
 
     SOURCE_TYPE = {
         'FILE': 0,
@@ -32,23 +34,29 @@ class Buoy:
         'WEBCAM': 2
     }
 
+    LASTFOUND = None
+
     OPENED = False
     OPENED_TYPE = None
 
     def __init__(self):
+        # Load ML Lib
+        # self.ML = BuoyML()
+
         # Load Ref img
         filedir = os.path.dirname(os.path.abspath(__file__))
         jiangshi = cv2.imread(os.path.join(filedir, 'jiangshi.jpg'), 0)
-        jiangshi = cv2.resize(jiangshi, None, fx=0.3, fy=0.3)
-        self.jiangshi = cv2.medianBlur(jiangshi, 3)
+        self.jiangshi = cv2.resize(jiangshi, None, fx=0.1, fy=0.1)
+        # self.jiangshi = cv2.medianBlur(self.jiangshi, 7)
         self.sift = cv2.xfeatures2d.SIFT_create()
         self.ori_kp, self.ori_des = self.sift.detectAndCompute(jiangshi, None)
 
         # Init FLANN
         FLANN_INDEX_KDTREE = 0
         index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-        search_params = dict(checks=100)
+        search_params = dict(checks=50)
         self.flann = cv2.FlannBasedMatcher(index_params, search_params)
+        # self.flann = cv2.BFMatcher()
 
     def openSource(self, sourceType, source=0):
         if sourceType == self.SOURCE_TYPE['FILE']:
@@ -76,7 +84,10 @@ class Buoy:
         img = self.img.copy()
         zoom_rate = self.lockX/img.shape[1]
         self.img_sm = cv2.resize(img, None, fx=zoom_rate, fy=zoom_rate)
-        self.img_sm = cv2.GaussianBlur(self.img_sm, (3, 3), 256)
+        # img_yuv = cv2.cvtColor(self.img_sm, cv2.COLOR_BGR2YUV)
+        # img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
+        # self.img_sm = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+        # self.img_sm = cv2.GaussianBlur(self.img_sm, (3, 3), 256)
         self.img_gray = cv2.cvtColor(self.img_sm, cv2.COLOR_BGR2GRAY)
 
     def process(self):
@@ -109,12 +120,18 @@ class Buoy:
 
         grouped = self.filterByLabels(points, labels)
 
+        grouped = sorted(grouped, key=lambda (a, b): len(b), reverse=True)
+        newGroup = []
+        for i, dat in enumerate(grouped):
+            rect = cv2.boundingRect(np.array(dat[1]))
+            if rect[2]*rect[3]/self.img_gray.shape[0]/self.img_gray.shape[1] > 4e-04:
+                newGroup.append(dat)
+        grouped = newGroup
+
         if len(grouped) == 0:
             result.result_img = self.drawDebug(
                 kp, matches, labels, matchesMask)
             return result
-
-        grouped = sorted(grouped, key=lambda (a, b): len(b), reverse=True)
 
         xs, ys = ([], [])
         for x, y in grouped[0][1]:
@@ -125,12 +142,66 @@ class Buoy:
 
         rect = cv2.boundingRect(np.array(grouped[0][1]))
 
+        if rect[2]/rect[3] > 4 or rect[3]/rect[2] > 4:
+            result.result_img = self.drawDebug(
+                kp, matches, labels, matchesMask)
+            return result
+
+        cx = 2*ct[0]/self.img_gray.shape[1]-1
+        cy = 1-2*ct[1]/self.img_gray.shape[0]
+
+        if self.LASTFOUND is not None:
+            time_diff = time.time()-(self.LASTFOUND.time)
+            if time_diff < 2:
+                distPc = self.calcDistPercent(
+                    (cx, cy),
+                    (self.LASTFOUND.cx, self.LASTFOUND.cy)
+                )
+                # print(distPc)
+                if distPc > 0.3:
+                    result.result_img = self.drawDebug(
+                        kp, matches, labels, matchesMask)
+                    return result
+
+        cropped = self.cropRect(self.img_sm, rect)
+        gray_crop = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+        _, th = cv2.threshold(
+            gray_crop, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+        circles = cv2.HoughCircles(
+            th, cv2.HOUGH_GRADIENT, 1, 20,
+            param1=50, param2=10, maxRadius=int(cropped.shape[0]/10))
+        if circles is None:
+            result.result_img = self.drawDebug(
+                kp, matches, labels, matchesMask)
+            return result
+        # if circles is not None:
+        #     circles = np.round(circles[0, :]).astype("int")
+        #     for (x, y, r) in circles:
+        #         cv2.circle(cropped, (x, y), r, (0, 255, 0), 4)
+        #         cv2.rectangle(cropped, (x - 5, y - 5),
+        #                       (x + 5, y + 5), (0, 128, 255), -1)
+        # cv2.imshow('isBuoy?', cropped)
+        # cv2.imshow('isBuoy2?', th)
+        # if cv2.waitKey(0) == ord('y'):
+        #     self.save(cropped, 'buoy_train/p/')
+        # else:
+        #     self.save(cropped, 'buoy_train/n/')
+
+        # print (self.ML.getprop(cropped))
+        # if self.ML.predict(cropped) == 0:
+        #     result.result_img = self.drawDebug(
+        #         kp, matches, labels, matchesMask)
+        #     return result
+
         result.result_img = self.drawDebug(
             kp, matches, labels, matchesMask, points, rect, ct)
-        result.cx = 2*ct[0]/self.img_gray.shape[1]-1
-        result.cy = 1-2*ct[1]/self.img_gray.shape[0]
+        result.cx = cx
+        result.cy = cy
         result.score = len(grouped[0][1])/len(points)
-        result.area = rect[2]*rect[3]/self.img_gray.shape[0]/self.img_gray.shape[1]
+        result.area = rect[2]*rect[3] / \
+            self.img_gray.shape[0]/self.img_gray.shape[1]
+        result.time = time.time()
+        self.LASTFOUND = result
         return result
 
     def filterByLabels(self, points, labels):
@@ -161,7 +232,8 @@ class Buoy:
                            flags=0)
         flann_matches = cv2.drawMatchesKnn(
             self.jiangshi, self.ori_kp, gray, kp, matches, None, **draw_params)
-        if sum(labels) != -len(labels):
+        # if sum(labels) != -len(labels):
+        if points is not None:
             cv2.putText(flann_matches, "FOUND", (50, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 7)
         else:
@@ -171,3 +243,25 @@ class Buoy:
             flann_matches, None, fx=1000/flann_matches.shape[1],
             fy=1000/flann_matches.shape[1])
         return flann_matches
+
+    def cropRect(self, img, rect):
+        x, y, w, h = rect
+        if x-40 > 0:
+            x -= 40
+        else:
+            x = 0
+        if y-40 > 0:
+            y -= 40
+        else:
+            y = 0
+        if x+w+40 < img.shape[1]:
+            w += 40
+        if y+h+40 < img.shape[0]:
+            h += 40
+        return img[y:y+h, x:x+w]
+
+    def calcDistPercent(self, pt, newpt):
+        return (((newpt[0]-pt[0])**2+(newpt[1]-pt[1])**2)**0.5)/2
+
+    def save(self, img, path):
+        cv2.imwrite(path+str(int(time.time()*1000000))+'.png', img)
