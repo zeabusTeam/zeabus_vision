@@ -147,15 +147,18 @@ def get_obj(mask):
         if (abs(first_ang - last_ang) < 25) :
             turn_point = 0
     if turn_point == 0 :
-        n_point = 2
-        area1 = cv.contourArea(cnt)/(himg*wimg)
-        area2 = 0.0
-        cx1 = cx[10]
-        cy1 = cy[10]
-        cx2 = cx[1]
-        cy2 = cy[1]
-        cx3 = 0.0
-        cy3 = 0.0
+		#if h < w :
+			#return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+		#else :
+		n_point = 2
+		area1 = cv.contourArea(cnt)/(himg*wimg)
+		area2 = 0.0
+		cx1 = cx[10]
+		cy1 = cy[10]
+		cx2 = cx[1]
+		cy2 = cy[1]
+ 		cx3 = 0.0
+ 		cy3 = 0.0
     else :
         n_point = 3
         # crop_top = mask[y:y+(turn_point*h/10),x:x+w]
