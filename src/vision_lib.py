@@ -5,6 +5,7 @@ from cv_bridge import CvBridge
 from std_msgs.msg import Float64
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Point
+from zeabus_utility.msg import VisionBox
 from constant import AnsiCode
 
 
@@ -60,6 +61,23 @@ class TransformTools:
         point.y = float(-1.0*self.convert(y, himg))
         point.z = float(z)
         return point
+
+    def convert_to_point(self, pt, shape):
+        himg, wimg = shape[:2]
+        x = self.convert(pt[0],wimg)
+        y = -1.0*self.convert(pt[1],himg)
+        return [x,y]
+
+    def to_box(self, pt1, pt2, pt3, pt4, area, shape, state=0):
+        himg, wimg = shape[:2]
+        box = VisionBox()
+        box.point_1 = self.convert_to_point(pt1, shape)
+        box.point_2 = self.convert_to_point(pt2, shape)
+        box.point_3 = self.convert_to_point(pt3, shape)
+        box.point_4 = self.convert_to_point(pt3, shape)
+        box.area = self.convert(area,himg*wimg)
+        box.state = state
+        return box
 
 class ImageTools:
     def __init__(self, sub_sampling=0.3):
