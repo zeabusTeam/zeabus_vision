@@ -6,7 +6,7 @@ import math
 from time import time
 from sensor_msgs.msg import CompressedImage
 from zeabus_utility.msg import VisionBox
-from zeabus_utility.srv import VisionSrvBox
+from zeabus_utility.srv import VisionSrvDropGarlic
 from constant import AnsiCode
 from vision_lib import OutputTools, ImageTools,TransformTools
 from geometry_msgs.msg import Point
@@ -281,7 +281,7 @@ if __name__ == '__main__':
     rospy.Subscriber('/vision/bottom/image_raw/compressed', CompressedImage, image.callback)
     output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
     rospy.Service('/vision/drop_garlic',
-                  VisionSrvBox(), mission_callback)
+                  VisionSrvDropGarlic(), mission_callback)
     output.log("INIT SERVICE", AnsiCode.GREEN)
     rospy.spin()
     output.log("END PROGRAM", AnsiCode.YELLOW_HL + AnsiCode.RED)
