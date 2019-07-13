@@ -4,12 +4,10 @@ import os
 import cv2 as cv
 import numpy as np
 from time import time
-from std_msgs.msg import Int64, Float64, Header, String
+from std_msgs.msg import Header
 from sensor_msgs.msg import CompressedImage
-from geometry_msgs.msg import Point
 from zeabus_utility.msg import VisionBox, VisionCoffins
 from zeabus_utility.srv import VisionSrvExposed
-from operator import itemgetter
 from constant import AnsiCode
 from vision_lib import OutputTools, ImageTools, TransformTools
 
@@ -97,7 +95,7 @@ def get_mask():
     return mask
 
 
-def find_coffin(c=0):
+def find_coffin():
     if image.bgr is None:
         output.img_is_none()
         return message(state=-1)
@@ -137,17 +135,8 @@ if __name__ == '__main__':
     rospy.Subscriber(image.topic('bottom'), CompressedImage,
                      image.callback, queue_size=1)
     output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
-    # cv.namedWindow('frame')
-    # cv.createTrackbar('lower', 'frame', 0, 255, nothing)
-    c = 0
-    while not rospy.is_shutdown():
-        a = time()
-        find_coffin(c)
-        c += 1
-        print('time', time()-a)
-        # rospy.sleep(0.1)
-    # rospy.Service('vision/stake',
-    #               VisionSrvStake(), mission_callback)
-    # output.log("INIT SERVICE", AnsiCode.GREEN)
+    rospy.Service('vision/exposed',
+                  VisionSrvExposed(), mission_callback)
+    output.log("INIT SERVICE", AnsiCode.GREEN)
     rospy.spin()
-    # output.log("END PROGRAM", AnsiCode.YELLOW_HL + AnsiCode.RED)
+    output.log("END PROGRAM", AnsiCode.YELLOW_HL + AnsiCode.RED)
