@@ -94,7 +94,7 @@ def get_cx(box,cnt,mode) :
     return 1,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4
 
 def find_drop_garlic () :
-     
+    image.renew_display() 
     image.to_gray()
     
     blur = cv.GaussianBlur(image.gray,(5,5),0)
@@ -149,28 +149,28 @@ def find_drop_garlic () :
         box = cv.boxPoints(rect)
         box = np.int0(box)
         approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
-        # print len(approx)
+        print len(approx)
         area = cv.contourArea(cnt)
-        if area > 3000 and len(approx) <= 15:
+        print area
+        if area > 3000 and len(approx) <= 20:
             state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4 = get_cx(box,cnt,mode='find_mission')
-            cv.drawContours(image.bgr,[box],0,(255,255,255),2)
-            if state == 1 and ((cx2-cx1)/(cy3-cy2) >= 1.7 and  (cx2-cx1)/(cy3-cy2) <= 2.3):
-                cv.drawContours(image.bgr,[box],0,(255,255,255),2)
-                cv.circle(image.bgr, (cx4,cy4), 3, (255,0,0),-1)
-                cv.circle(image.bgr, (cx2,cy2), 3, (0,255,0),-1)
-                cv.circle(image.bgr, (cx3,cy3), 3, (0,0,255),-1)
-                cv.circle(image.bgr, (cx1,cy1), 3, (0,0,0),-1)
+            #cv.drawContours(image.display,[box],0,(255,255,255),2)
+            if state == 1 :
+                cv.drawContours(image.display,[box],0,(255,255,255),2)
+                cv.circle(image.display, (cx4,cy4), 3, (255,0,0),-1)
+                cv.circle(image.display, (cx2,cy2), 3, (0,255,0),-1)
+                cv.circle(image.display, (cx3,cy3), 3, (0,0,255),-1)
+                cv.circle(image.display, (cx1,cy1), 3, (0,0,0),-1)
             elif state == 2 :
-                cv.circle(image.bgr, (cx1,cy1), 3, (255,255,255),-1)
-            output.publish(image.bgr,'bgr','/cnt')
+                cv.circle(image.display, (cx1,cy1), 3, (255,255,255),-1)
+            output.publish(image.display,'bgr','/cnt')
             return message(wimg,himg,state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4,area/(himg*wimg))
     # cv.drawContours(image.bgr, cnt, -1, (0,0,0), 3)
     return message(wimg,himg,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
 
 def find_drop() :
-
+    image.renew_display()
     image.to_gray()
-    
     blur = cv.GaussianBlur(image.gray,(5,5),0)
     himg,wimg = blur.shape
     # print(r,c)
@@ -227,6 +227,8 @@ def find_drop() :
         approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
         if area > 3000 and len(approx) <= 15:
             gray = image.gray[max(int(cy4),int(cy3)):min(int(cy1),int(cy2)),max(int(cx1),int(cx4)):min(int(cx2),int(cx3))]
+            print area
+            print len(approx)
             output.publish(gray,'gray','/test')
             ret1,th1 = cv.threshold(gray,gray.max()*0.7,255,cv.THRESH_BINARY)
             th1 = cv.bitwise_not(th1)
@@ -260,16 +262,16 @@ def find_drop() :
                 box[3][0] = cx4
                 box[3][1] = cy4
                 # cv.drawContours(image.bgr,[[[cx1,cy1],[cx2,cy2],[cx3,cy3],[cx4,cy4]]],0,(255,255,255),2)
-                # cv.drawContours(image.bgr,[box],0,(255,255,255),2)
-                if state == 1 and ((cx2-cx1)/(cy3-cy2) >= 0.2 and  (cx2-cx1)/(cy3-cy2) <= 0.7):
-                    cv.drawContours(image.bgr,[box],0,(255,255,255),2)
-                    cv.circle(image.bgr, (cx4,cy4), 3, (255,0,0),-1)
-                    cv.circle(image.bgr, (cx2,cy2), 3, (0,255,0),-1)
-                    cv.circle(image.bgr, (cx3,cy3), 3, (0,0,255),-1)
-                    cv.circle(image.bgr, (cx1,cy1), 3, (0,0,0),-1)
+                #cv.drawContours(image.bgr,[box],0,(255,255,255),2)
+                if state == 1 :
+                    cv.drawContours(image.display,[box],0,(255,255,255),2)
+                    cv.circle(image.display, (cx4,cy4), 3, (255,0,0),-1)
+                    cv.circle(image.display, (cx2,cy2), 3, (0,255,0),-1)
+                    cv.circle(image.display, (cx3,cy3), 3, (0,0,255),-1)
+                    cv.circle(image.display, (cx1,cy1), 3, (0,0,0),-1)
                 elif state == 2 :
-                    cv.circle(image.bgr, (cx1,cy1), 5, (255,255,255),-1)
-                output.publish(image.bgr,'bgr','/cnt')
+                    cv.circle(image.display, (cx1,cy1), 5, (255,255,255),-1)
+                output.publish(image.display,'bgr','/cnt')
                 return message(wimg,himg,state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4,area_slice/(himg*wimg))
     # cv.drawContours(image.bgr, cnt, -1, (0,0,0), 3)
     return message(wimg,himg,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
