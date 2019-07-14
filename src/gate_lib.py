@@ -1,4 +1,5 @@
 from __future__ import division
+import time
 import cv2
 import numpy as np
 from gate_ml_lib import GateML
@@ -23,6 +24,8 @@ class Gate:
             self.device = None
         self.filename = fileToOpen
         self.last_detect = None
+        self.widthStack = []
+        self.lastTime = None
 
     def read(self):
         '''Read opedgesenned file and openImg Window
@@ -83,7 +86,7 @@ class Gate:
         kernel = np.ones((blur_k*2, blur_k*2), np.uint8)
         closing = cv2.morphologyEx(bw_th3, cv2.MORPH_CLOSE, kernel)
         _, cts, hi = cv2.findContours(
-               closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         cts = sorted(cts, key=my_area, reverse=True)
         self.temp_img = img
         filtered = self.FindGateFromGates(cts, gray)
@@ -92,12 +95,23 @@ class Gate:
         for c in filtered:
             x, y, w, h = cv2.boundingRect(c)
             c_area = cv2.contourArea(c)
-            found = ((2*x+w)/img.shape[1]-1, (2*y+h)/img.shape[0] - 1,
-                     2*x/img.shape[1]-1, 2*(x+w)/img.shape[1]-1,
-                     c_area/w/h)
-            diff = self.calcDiffPercent(found, self.last_detect)
-            cond = self.last_detect is None or diff[0] < 0.2
+            _found = ((2*x+w)/img.shape[1]-1, (2*y+h)/img.shape[0] - 1,
+                      2*x/img.shape[1]-1, 2*(x+w)/img.shape[1]-1,
+                      c_area/w/h)
+            if self.lastTime is None or time.time()-self.lastTime < 10:
+                diff = self.calcDiffPercent(_found, self.last_detect)
+                cond = self.last_detect is None or (diff[0] < 0.2)
+                if len(self.widthStack) > 0:
+                    avgWidth = sum(self.widthStack)/len(self.widthStack)
+                    acceptable = 0.4
+                    widthCond = (_found[3]-_found[2]) < avgWidth + \
+                        acceptable and (_found[3]-_found[2]) > avgWidth-acceptable
+                    cond = cond and acceptable
+            else:
+                cond = True
             if cond:
+                found = _found
+                self.widthStack.append(found[3]-found[2])
                 cv2.rectangle(withct, (x, y), (x+w, y+h), (255, 255, 0), 3)
                 cv2.circle(withct, (int(x+w/2), int(y+h/2)),
                            4, (0, 255, 255), 4)
