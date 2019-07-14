@@ -1,6 +1,7 @@
 from __future__ import division
 import cv2
 import numpy as np
+from gate_ml_lib import GateML
 from gate_ifelse_lib import GateCheck
 
 
@@ -11,7 +12,10 @@ class Gate:
         fileOrDevice (str,int): you can send this to OpenCV to open
     '''
 
+    useml = False
+
     def __init__(self, fileToOpen=None):
+        self.GateML = GateML()
         self.GateCond = GateCheck()
         if fileToOpen is not None:
             self.device = cv2.VideoCapture(fileToOpen)
@@ -45,7 +49,7 @@ class Gate:
         Returns:
             list -- Found data. None or list of cx1,cy1,cx2,cy2,area
         """
-        img = cv2.resize(img, None, fx=0.25, fy=0.25)
+        img = cv2.resize(img, None, fx=0.50, fy=0.50)
         processed = self._process(img)
         if showImg:
             # cv2.imshow(str(self.filename)+' ct', processed[1])
@@ -58,7 +62,7 @@ class Gate:
             cond = self.last_detect is None or diff[0] < 0.2
             if cond:
                 self.last_detect = processed[6]
-        return (processed[6], processed[5])
+        return (processed[6], processed[5], processed[4])
 
     def _process(self, img):
         def my_area(ct):
@@ -66,19 +70,20 @@ class Gate:
             return w*h
         self.img_size = img.shape[0:2]
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        blur_k = int(self.img_size[0]/90)
+        gray = cv2.equalizeHist(gray)
+        blur_k = int(self.img_size[0]/150)
         blur_k += (blur_k+1) % 2
         noise_removed = cv2.medianBlur(gray, blur_k)
         ret, th1 = cv2.threshold(
-            noise_removed, 127*0.9, 255, cv2.THRESH_BINARY_INV)
+            noise_removed, 20, 255, cv2.THRESH_BINARY_INV)
         th3 = cv2.adaptiveThreshold(noise_removed,
                                     255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                     cv2.THRESH_BINARY_INV, blur_k*4+1, 2)
         bw_th3 = cv2.bitwise_and(th1, th3)
-        kernel = np.ones((blur_k, blur_k), np.uint8)
+        kernel = np.ones((blur_k*2, blur_k*2), np.uint8)
         closing = cv2.morphologyEx(bw_th3, cv2.MORPH_CLOSE, kernel)
-        cts, hi = cv2.findContours(
-            closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        _, cts, hi = cv2.findContours(
+               closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         cts = sorted(cts, key=my_area, reverse=True)
         self.temp_img = img
         filtered = self.FindGateFromGates(cts, gray)
@@ -108,7 +113,7 @@ class Gate:
         return tuple(res)
 
     def prepareData(self, gray):
-        data_t = cv2.resize(gray, (20, 20))
+        data_t = cv2.resize(gray, (40, 20))
         return data_t
 
     def FindGateFromGates(self, cts, gray):
@@ -119,11 +124,18 @@ class Gate:
         outputs = []
         for i, ct in enumerate(cts):
             x, y, w, h = cv2.boundingRect(ct)
-            # mini = gray[y:y+h, x:x+w]
-            # prepared = self.prepareData(mini)
-            if self.GateCond.predict(ct, gray.shape) == 1:
-                # color = (0, 255, 0)
-                outputs.append(ct)
+            if self.useml:
+                only_ct = np.zeros_like(gray, 'uint8')
+                cv2.fillPoly(only_ct, pts=[ct], color=255)
+                mini = only_ct[y:y+h, x:x+w]
+                prepared = self.prepareData(mini)
+                if self.GateML.predict(prepared) == 1:
+                    # color = (0, 255, 0)
+                    outputs.append(ct)
+            else:
+                if self.GateCond.predict(ct, gray.shape) == 1:
+                    # color = (0, 255, 0)
+                    outputs.append(ct)
             # else:
             #     color = (255, 0, 255)
             # cv2.rectangle(opt, (x, y), (x+w, y+h), color, 2)

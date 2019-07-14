@@ -21,6 +21,7 @@ if DEBUG['oldbag']:
 process_obj = Gate()
 image = None
 result_pub = None
+mask_pub = None
 last_found = [0.0, 0.0, 0.0, 0.0, 0.0]
 bridge = CvBridge()
 
@@ -35,11 +36,12 @@ def imageCallback(msg):
 
 
 def find_gate():
-    global image, last_found, result_pub, bridge
+    global image, last_found, result_pub, mask_pub, bridge
     output = None
     if image is not None:
-        output, img = process_obj.doProcess(image)
+        output, img, mask = process_obj.doProcess(image)
         result_pub.publish(bridge.cv2_to_imgmsg(img, encoding="bgr8"))
+        mask_pub.publish(bridge.cv2_to_imgmsg(mask))
         if output is not None:
             output = [float(i) for i in output]
     else:
@@ -57,6 +59,10 @@ def gate_callback(msg):
     res = VisionGateResponse()
     if DEBUG['console'] or task == '':
         print('Service called', task, req)
+    if req == 'ml':
+        process_obj.useml = True
+    if req == 'if':
+        process_obj.useml = False
     if task in ['gate', '']:
         find_result = find_gate()
         res.found = find_result[0]
@@ -78,12 +84,14 @@ def gate_callback(msg):
 
 
 def main():
-    global result_pub
+    global result_pub, mask_pub
     rospy.init_node('vision_gate')
     if not rospy.is_shutdown():
         rospy.Service('/vision/gate', VisionGate(), gate_callback)
         result_pub = rospy.Publisher(
             PUBLIC_TOPIC+'/result', Image, queue_size=10)
+        mask_pub = rospy.Publisher(
+            PUBLIC_TOPIC+'/mask', Image, queue_size=10)
         rospy.Subscriber(CAMERA_TOPIC, CompressedImage, imageCallback)
         _log("Service is running.")
         rospy.spin()
