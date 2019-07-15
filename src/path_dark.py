@@ -98,7 +98,7 @@ def get_obj(mask):
 		return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     cnt = max(cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
     area = cv.contourArea(cnt)
-    if area < 1500:
+    if area < 2500:
     	return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     x,y,w,h = cv.boundingRect(cnt)
     if area < w*h/10:

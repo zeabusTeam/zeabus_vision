@@ -152,7 +152,7 @@ def find_drop_garlic (func) :
         print len(approx)
         area = cv.contourArea(cnt)
         print area
-        if area > 3000 and len(approx) <= 20:
+        if area > 3000 and len(approx) < 22:
             state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4 = get_cx(box,cnt,mode='find_mission')
             #cv.drawContours(image.display,[box],0,(255,255,255),2)
             if state == 1 or func == 'drop':
