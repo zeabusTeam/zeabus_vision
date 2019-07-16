@@ -7,13 +7,13 @@ from time import time
 from std_msgs.msg import Int64, Float64, Header, String
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Point
-from zeabus_utility.msg import VisionStake
-from zeabus_utility.srv import VisionSrvStake
+from zeabus_utility.msg import VisionBox
+from zeabus_utility.srv import VisionSrvStake, VisionSrvStakeResponse
 from operator import itemgetter
 from constant import AnsiCode
 from vision_lib import OutputTools, ImageTools, TransformTools
 
-image = ImageTools(sub_sampling=0.5)
+image = ImageTools(sub_sampling=0.3)
 output = OutputTools(topic='/vision/stake/')
 transform = TransformTools()
 seq = 1
@@ -38,36 +38,65 @@ def mission_callback(msg):
         return message(state=-1)
     task = str(msg.task.data)
     request = str(msg.request.data)
+    if task == 'stake' and request == 'vampire':
+        return find_vampire()
     if task == 'stake' and request == 'heart':
         return find_heart()
     elif task == 'stake' and request == 'hole':
         return find_hole()
 
 
-def message(state=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, area=0.0,
-            name='stake'):
-    global seq
-    if state < 0:
-        return VisionStake()
-    msg = VisionStake()
-    header = Header()
-    header.stamp = rospy.Time.now()
-    header.seq = seq
-    seq += 1
-    msg.header = header
-    msg.type = Int64(state)
-    msg.name = String(name)
-    msg.point1 = transform.to_point(cx1, cy1, image.display.shape[:2])
-    msg.point2 = transform.to_point(cx2, cy2, image.display.shape[:2])
-    msg.area = Float64(area)
-    print(msg)
+def to_box(state=0, box=0, area=0.0, color=(0, 255, 0), center=True):
+    shape = image.display.shape[:2]
+    sort = sorted(box, key=lambda x: x[0])
+    bottom = sort[:2]
+    bottom = sorted(bottom, key=lambda x: x[1])
+    pt4 = bottom[0]
+    pt2 = bottom[1]
+    top = sort[2:]
+    top = sorted(top, key=lambda x: x[1])
+    pt3 = top[0]
+    pt1 = top[1]
+    msg = VisionBox()
+    msg.state = state
+    for i in range(1, 5):
+        print('pt'+str(i), tuple(eval('pt'+str(i))))
+        cv.putText(image.display, str(i), tuple(eval('pt'+str(i))),
+                   cv.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv.LINE_AA)
+    if center:
+        cx = cy = 0
+        for pt in box:
+            cx += pt[0]
+            cy += pt[1]
+        cx /= 4
+        cy /= 4
+        cv.putText(image.display, 'c', (cx, cy),
+                   cv.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv.LINE_AA)
+        cv.circle(image.display, (cx, cy), 5, color, -1)
+        msg.point_1 = transform.convert_to_point((cx, cy), shape)
+        print('msg', msg)
+    else:
+        msg.point_1 = transform.convert_to_point(pt1, shape)
+        msg.point_2 = transform.convert_to_point(pt2, shape)
+        msg.point_3 = transform.convert_to_point(pt3, shape)
+        msg.point_4 = transform.convert_to_point(pt4, shape)
+    msg.area = transform.convert(area, shape[0]*shape[1])
     return msg
 
-    # filedir = os.path.dirname(os.path.abspath(__file__))
-    # jiangshi = cv2.imread(os.path.join(filedir, 'jiangshi.jpg'), 0)
+
+def message(state=0, box=0, area=0.0):
+    response = VisionSrvStakeResponse()
+    if state < 0:
+        return response
+    if state >= 1:
+        response.data = to_box(state=state, box=box, area=area)
+    output.log('pubing', AnsiCode.GREEN)
+    output.publish(image.display, 'bgr', 'display')
+    print(response)
+    return response
 
 
-def find_heart(c=0):
+def find_vampire(c=0):
     if image.bgr is None:
         output.img_is_none()
         return message(state=-1)
@@ -83,7 +112,9 @@ def find_heart(c=0):
     flann = cv.FlannBasedMatcher(flannParam, {})
     # cv.imwrite('big-raw' + str(c) + '.png', image.display)
     train_kp, train_des = detector.detectAndCompute(heart_template, None)
+    print(len(train_kp))
     res = cv.drawKeypoints(heart_template.copy(), train_kp, None)
+    output.publish(res, 'bgr', 'res')
     edges = cv.Canny(image.bgr, 200, 206)
     queryKP, queryDesc = detector.detectAndCompute(image.display, None)
     matches = flann.knnMatch(queryDesc, train_des, k=2)
@@ -92,8 +123,11 @@ def find_heart(c=0):
     # cv.imshow('qkp', res2)
     goodMatch = []
     for m, n in matches:
-        if(m.distance < 0.75*n.distance):
+        if(m.distance < 0.70*n.distance):
             goodMatch.append(m)
+    himg, wimg = image.display.shape[:2]
+    cv.putText(image.display, str(len(goodMatch))+"/"+str(len(train_kp)), (0, himg),
+               cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
     if(len(goodMatch) > MIN_MATCH_COUNT):
         tp = []
         qp = []
@@ -105,15 +139,50 @@ def find_heart(c=0):
         h, w = heart_template.shape[:2]
         trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
         queryBorder = cv.perspectiveTransform(trainBorder, H)
+        print('q', queryBorder[0])
+        print('qnp', [np.int32(queryBorder[0])])
         cv.polylines(image.display, [np.int32(
             queryBorder)], True, (0, 255, 0), 5)
+        return message(state=1, box=np.int64(queryBorder[0]))
     else:
         print "Not Enough match found- %d/%d" % (
             len(goodMatch), MIN_MATCH_COUNT)
+        return message()
     output.publish(edges, 'gray', 'canny')
-    output.publish(res, 'bgr', 'res')
-    output.publish(image.display, 'bgr', 'display')
-    return message()
+
+
+def get_mask():
+    image.to_hsv()
+    upper = np.array([72, 255, 255], dtype=np.uint8)
+    lower = np.array([28, 0, 0], dtype=np.uint8)
+    mask = cv.inRange(image.hsv, lower, upper)
+    return mask
+
+def get_template():
+    filedir = os.path.dirname(os.path.abspath(__file__))
+    heart_template = cv.imread(os.path.join(
+        filedir, 'pictures/med.png'), 3)
+    upper = np.array([72, 255, 255], dtype=np.uint8)
+    lower = np.array([28, 0, 0], dtype=np.uint8)
+    mask = cv.inRange(image.hsv, lower, upper)
+    return mask
+
+
+def find_heart(c=0):
+    if image.bgr is None:
+        output.img_is_none()
+        return message(state=-1)
+    image.renew_display()
+    mask = get_mask()
+    output.publish(mask, 'gray', '/mask')
+    contours = cv.findContours(
+        mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+    goodMatch = []
+    for cnt in contours:
+        d2 = cv.matchShapes(get_template(),cnt,cv.CONTOURS_MATCH_I2,0)
+        if d2 < 1e-2:
+            goodMatch.append(cnt)
+    print(len(goodMatch))
 
 
 def find_hole():
@@ -134,9 +203,9 @@ if __name__ == '__main__':
     c = 0
     while not rospy.is_shutdown():
         a = time()
-        find_heart(c)
+        find_vampire(c)
         c += 1
-        print('time',time()-a)
+        print('time', time()-a)
         # rospy.sleep(0.1)
     # rospy.Service('vision/stake',
     #               VisionSrvStake(), mission_callback)
