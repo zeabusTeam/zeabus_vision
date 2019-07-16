@@ -49,7 +49,7 @@ class Buoy:
         self.jiangshi = cv2.resize(jiangshi, None, fx=0.1, fy=0.1)
         # self.jiangshi = cv2.medianBlur(self.jiangshi, 7)
         self.sift = cv2.xfeatures2d.SIFT_create()
-        self.ori_kp, self.ori_des = self.sift.detectAndCompute(jiangshi, None)
+        self.ori_kp, self.ori_des = self.sift.detectAndCompute(self.jiangshi, None)
 
         # Init FLANN
         FLANN_INDEX_KDTREE = 0
