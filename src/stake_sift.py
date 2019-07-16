@@ -39,7 +39,7 @@ def mission_callback(msg):
         return find_vampire()
     elif task == 'stake' and request == 'heart':
         return find_heart()
-    elif task == 'stake' and request in ['left','right']:
+    elif task == 'stake' and request in ['left', 'right']:
         return find_hole(request)
 
 
@@ -53,7 +53,7 @@ def q_area(box, n=4):
     return abs(area / 2.0)
 
 
-def to_box(state=0, box=0, color=(0, 255, 0), center=True):
+def to_box(state=0, box=0, color=(0, 255, 0), area=0.0, center=True):
     shape = image.display.shape[:2]
     sort = sorted(box, key=lambda x: x[0])
     bottom = sort[:2]
@@ -66,8 +66,9 @@ def to_box(state=0, box=0, color=(0, 255, 0), center=True):
     pt2 = top[1]
     msg = VisionBox()
     msg.state = state
-    print(shape[0]*shape[1],'shape')
-    msg.area = q_area(box)/(shape[0]*shape[1])
+    print(shape[0]*shape[1], 'shape')
+    if area == -1:
+        msg.area = q_area(box)/(shape[0]*shape[1])
     for i in range(1, 5):
         print('pt'+str(i), tuple(eval('pt'+str(i))))
         cv.putText(image.display, str(i), tuple(eval('pt'+str(i))),
@@ -89,7 +90,7 @@ def to_box(state=0, box=0, color=(0, 255, 0), center=True):
         msg.point_2 = transform.convert_to_point(pt2, shape)
         msg.point_3 = transform.convert_to_point(pt3, shape)
         msg.point_4 = transform.convert_to_point(pt4, shape)
-    
+
     return msg
 
 
@@ -98,7 +99,7 @@ def message(state=0, box=0, area=0.0, center=True):
     if state < 0:
         return response
     if state >= 1:
-        response.data = to_box(state=state, box=box, center=False)
+        response.data = to_box(state=state, box=box, area=area, center=center)
     output.log('pubing', AnsiCode.GREEN)
     output.publish(image.display, 'bgr', 'display')
     print(response)
@@ -153,7 +154,7 @@ def find_vampire(c=0):
         print('qnp', [np.int32(queryBorder[0])])
         cv.polylines(image.display, [np.int32(
             queryBorder)], True, (0, 255, 0), 5)
-        return message(state=1, box=np.int64(queryBorder[0]))
+        return message(state=1, box=np.int64(queryBorder[0]), area=-1, center=False)
     else:
         print "Not Enough match found- %d/%d" % (
             len(goodMatch), MIN_MATCH_COUNT)
@@ -229,12 +230,12 @@ def find_hole(request):
         output.publish(image.display, 'bgr', 'heart')
         return message()
     print(res)
-    res = sorted(res,key=lambda x: x[0][0], reverse=request=='right')
-    box = cv.boxPoints(res[0])
-    box = np.int64(box)
+    res = sorted(res, key=lambda x: x[0][0], reverse=request == 'right')
+    box_data = cv.boxPoints(res[0])
+    box = np.int64(box_data)
     cv.drawContours(image.display, [box], 0, (0, 255, 0), 2)
     output.publish(image.display, 'bgr', 'heart')
-    return message(box=box)
+    return message(box=box, area=box_data[1][0]*box_data[1][1], center=True)
 
 
 def nothing(x):
