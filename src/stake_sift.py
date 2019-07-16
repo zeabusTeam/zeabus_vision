@@ -52,11 +52,11 @@ def to_box(state=0, box=0, area=0.0, color=(0, 255, 0), center=True):
     bottom = sort[:2]
     bottom = sorted(bottom, key=lambda x: x[1])
     pt4 = bottom[0]
-    pt2 = bottom[1]
+    pt1 = bottom[1]
     top = sort[2:]
     top = sorted(top, key=lambda x: x[1])
     pt3 = top[0]
-    pt1 = top[1]
+    pt2 = top[1]
     msg = VisionBox()
     msg.state = state
     for i in range(1, 5):
@@ -84,12 +84,12 @@ def to_box(state=0, box=0, area=0.0, color=(0, 255, 0), center=True):
     return msg
 
 
-def message(state=0, box=0, area=0.0):
+def message(state=0, box=0, area=0.0, center=True):
     response = VisionSrvStakeResponse()
     if state < 0:
         return response
     if state >= 1:
-        response.data = to_box(state=state, box=box, area=area)
+        response.data = to_box(state=state, box=box, area=area, center=False)
     output.log('pubing', AnsiCode.GREEN)
     output.publish(image.display, 'bgr', 'display')
     print(response)
@@ -101,12 +101,13 @@ def find_vampire(c=0):
         output.img_is_none()
         return message(state=-1)
     image.renew_display()
+    # cv.imwrite('raw'+str(c)+'.png',image.display)
     # detector = cv.ORB_create()
     detector = cv.xfeatures2d.SIFT_create()
     filedir = os.path.dirname(os.path.abspath(__file__))
     heart_template = cv.imread(os.path.join(
-        filedir, 'pictures/big-raw.png'), 0)
-    MIN_MATCH_COUNT = 15
+        filedir, 'pictures/full0.3.png'), 0)
+    MIN_MATCH_COUNT = 30
     FLANN_INDEX_KDITREE = 0
     flannParam = dict(algorithm=FLANN_INDEX_KDITREE, tree=5)
     flann = cv.FlannBasedMatcher(flannParam, {})
@@ -123,7 +124,7 @@ def find_vampire(c=0):
     # cv.imshow('qkp', res2)
     goodMatch = []
     for m, n in matches:
-        if(m.distance < 0.70*n.distance):
+        if(m.distance < 0.75*n.distance):
             goodMatch.append(m)
     himg, wimg = image.display.shape[:2]
     cv.putText(image.display, str(len(goodMatch))+"/"+str(len(train_kp)), (0, himg),
@@ -158,13 +159,14 @@ def get_mask():
     mask = cv.inRange(image.hsv, lower, upper)
     return mask
 
+
 def get_template():
     filedir = os.path.dirname(os.path.abspath(__file__))
     heart_template = cv.imread(os.path.join(
         filedir, 'pictures/med.png'), 3)
     upper = np.array([72, 255, 255], dtype=np.uint8)
     lower = np.array([28, 0, 0], dtype=np.uint8)
-    mask = cv.inRange(image.hsv, lower, upper)
+    mask = cv.inRange(heart_template, lower, upper)
     return mask
 
 
@@ -173,16 +175,55 @@ def find_heart(c=0):
         output.img_is_none()
         return message(state=-1)
     image.renew_display()
-    mask = get_mask()
-    output.publish(mask, 'gray', '/mask')
-    contours = cv.findContours(
-        mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+    # cv.imwrite('raw'+str(c)+'.png',image.display)
+    # detector = cv.ORB_create()
+    detector = cv.xfeatures2d.SIFT_create()
+    filedir = os.path.dirname(os.path.abspath(__file__))
+    heart_template = cv.imread(os.path.join(
+        filedir, 'pictures/temp.png'), 0)
+    MIN_MATCH_COUNT = 15
+    FLANN_INDEX_KDITREE = 0
+    flannParam = dict(algorithm=FLANN_INDEX_KDITREE, tree=5)
+    flann = cv.FlannBasedMatcher(flannParam, {})
+    # cv.imwrite('big-raw' + str(c) + '.png', image.display)
+    train_kp, train_des = detector.detectAndCompute(heart_template, None)
+    print(len(train_kp))
+    res = cv.drawKeypoints(heart_template.copy(), train_kp, None)
+    output.publish(res, 'bgr', 'res')
+    edges = cv.Canny(image.bgr, 200, 206)
+    queryKP, queryDesc = detector.detectAndCompute(image.display, None)
+    matches = flann.knnMatch(queryDesc, train_des, k=2)
+    res2 = cv.drawKeypoints(image.display.copy(), queryKP, None)
+    output.publish(res2, 'bgr', 'res2')
+    # cv.imshow('qkp', res2)
     goodMatch = []
-    for cnt in contours:
-        d2 = cv.matchShapes(get_template(),cnt,cv.CONTOURS_MATCH_I2,0)
-        if d2 < 1e-2:
-            goodMatch.append(cnt)
-    print(len(goodMatch))
+    for m, n in matches:
+        if(m.distance < 0.75*n.distance):
+            goodMatch.append(m)
+    himg, wimg = image.display.shape[:2]
+    cv.putText(image.display, str(len(goodMatch))+"/"+str(len(train_kp)), (0, himg),
+               cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
+    if(len(goodMatch) > MIN_MATCH_COUNT):
+        tp = []
+        qp = []
+        for m in goodMatch:
+            tp.append(train_kp[m.trainIdx].pt)
+            qp.append(queryKP[m.queryIdx].pt)
+        tp, qp = np.float32((tp, qp))
+        H, status = cv.findHomography(tp, qp, cv.RANSAC, 3.0)
+        h, w = heart_template.shape[:2]
+        trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
+        queryBorder = cv.perspectiveTransform(trainBorder, H)
+        print('q', queryBorder[0])
+        print('qnp', [np.int32(queryBorder[0])])
+        cv.polylines(image.display, [np.int32(
+            queryBorder)], True, (0, 255, 0), 5)
+        return message(state=1, box=np.int64(queryBorder[0]))
+    else:
+        print "Not Enough match found- %d/%d" % (
+            len(goodMatch), MIN_MATCH_COUNT)
+        return message()
+    output.publish(edges, 'gray', 'canny')
 
 
 def find_hole():
@@ -198,17 +239,8 @@ if __name__ == '__main__':
     output.log("INIT NODE", AnsiCode.GREEN)
     rospy.Subscriber(image.topic('front'), CompressedImage, image.callback)
     output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
-    # cv.namedWindow('frame')
-    # cv.createTrackbar('lower', 'frame', 0, 255, nothing)
-    c = 0
-    while not rospy.is_shutdown():
-        a = time()
-        find_vampire(c)
-        c += 1
-        print('time', time()-a)
-        # rospy.sleep(0.1)
-    # rospy.Service('vision/stake',
-    #               VisionSrvStake(), mission_callback)
-    # output.log("INIT SERVICE", AnsiCode.GREEN)
+    rospy.Service('vision/stake',
+                  VisionSrvStake(), mission_callback)
+    output.log("INIT SERVICE", AnsiCode.GREEN)
     rospy.spin()
-    # output.log("END PROGRAM", AnsiCode.YELLOW_HL + AnsiCode.RED)
+    output.log("END PROGRAM", AnsiCode.YELLOW_HL + AnsiCode.RED)
