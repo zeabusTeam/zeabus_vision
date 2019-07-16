@@ -13,7 +13,7 @@ from operator import itemgetter
 from constant import AnsiCode
 from vision_lib import OutputTools, ImageTools, TransformTools
 
-image = ImageTools(sub_sampling=0.1)
+image = ImageTools(sub_sampling=1)
 output = OutputTools(topic='/vision/stake/')
 transform = TransformTools()
 seq = 1
@@ -93,7 +93,7 @@ def find_heart(c=0):
     # flann = cv.FlannBasedMatcher(flannParam, {})
     # train_kp, train_des = detector.detectAndCompute(heart_template, None)
     # res = cv.drawKeypoints(heart_template.copy(), train_kp, None)
-    edges = cv.Canny(image.bgr, 200, 206)
+    edges = cv.Canny(image.bgr, 100, 200)
     th = 0.5
     drawed = False
     '''
