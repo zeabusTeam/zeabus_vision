@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 from cv_bridge import CvBridge
 from std_msgs.msg import Float64
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CompressedImage
 from geometry_msgs.msg import Point
 from zeabus_utility.msg import VisionBox
 from constant import AnsiCode
@@ -28,6 +28,22 @@ class OutputTools:
         print(AnsiCode.RED + 'img is none.'+'\n'
               'Please check topic name or check camera is running' +
               AnsiCode.DEFAULT)
+
+    def new_publish(self, img, color, subtopic):
+        """
+            buggy plz don't use
+            publish picture
+        """
+        if img is None:
+            img = np.zeros((200, 200))
+            color = "gray"
+        pub = rospy.Publisher(self.topic + str(subtopic),
+                              CompressedImage, queue_size=10)
+        if color == 'gray':
+            msg = self.bridge.cv2_to_compressed_imgmsg(img)
+        elif color == 'bgr':
+            msg = self.bridge.cv2_to_compressed_imgmsg(img)
+        pub.publish(msg)
 
     def publish(self, img, color, subtopic):
         """
@@ -64,9 +80,9 @@ class TransformTools:
 
     def convert_to_point(self, pt, shape):
         himg, wimg = shape[:2]
-        x = self.convert(pt[0],wimg)
-        y = -1.0*self.convert(pt[1],himg)
-        return [x,y]
+        x = self.convert(pt[0], wimg)
+        y = -1.0*self.convert(pt[1], himg)
+        return [x, y]
 
     def to_box(self, pt1, pt2, pt3, pt4, area, shape, state=0):
         himg, wimg = shape[:2]
@@ -75,9 +91,10 @@ class TransformTools:
         box.point_2 = self.convert_to_point(pt2, shape)
         box.point_3 = self.convert_to_point(pt3, shape)
         box.point_4 = self.convert_to_point(pt3, shape)
-        box.area = self.convert(area,himg*wimg)
+        box.area = self.convert(area, himg*wimg)
         box.state = state
         return box
+
 
 class ImageTools:
     def __init__(self, sub_sampling=0.3):
