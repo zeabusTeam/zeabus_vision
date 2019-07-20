@@ -117,7 +117,7 @@ def find_vampire(c=0):
     filedir = os.path.dirname(os.path.abspath(__file__))
     heart_template = cv.imread(os.path.join(
         filedir, 'pictures/full0.3.png'), 0)
-    MIN_MATCH_COUNT = 30
+    MIN_MATCH_COUNT = 20
     FLANN_INDEX_KDITREE = 0
     flannParam = dict(algorithm=FLANN_INDEX_KDITREE, tree=5)
     flann = cv.FlannBasedMatcher(flannParam, {})

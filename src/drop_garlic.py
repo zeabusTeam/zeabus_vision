@@ -146,22 +146,25 @@ def find_drop_garlic (func) :
     if len(cnt) > 0 :
         cnt = max(cnt,key=cv.contourArea)
         rect = cv.minAreaRect(cnt)
+        w_cnt = rect[1][0]
+        h_cnt = rect[1][1]
         box = cv.boxPoints(rect)
         box = np.int0(box)
         approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
         print len(approx)
         area = cv.contourArea(cnt)
         print area
-        if area > 3000 and len(approx) < 22:
+        print area/(w_cnt*h_cnt)
+        if area > 3000 and area/(w_cnt*h_cnt) > 0.6:
             state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4 = get_cx(box,cnt,mode='find_mission')
             #cv.drawContours(image.display,[box],0,(255,255,255),2)
-            if state == 1 or func == 'drop':
+            if (state == 1 or func == 'drop') and len(approx) <= 16:
                 cv.drawContours(image.display,[box],0,(255,255,255),2)
                 cv.circle(image.display, (cx4,cy4), 3, (255,0,0),-1)
                 cv.circle(image.display, (cx2,cy2), 3, (0,255,0),-1)
                 cv.circle(image.display, (cx3,cy3), 3, (0,0,255),-1)
                 cv.circle(image.display, (cx1,cy1), 3, (0,0,0),-1)
-            elif state == 2 :
+            elif state == 2 and len(approx) <= 30 :
                 cv.circle(image.display, (cx1,cy1), 3, (255,255,255),-1)
                 cx2 = 0.0
                 cx3 = 0.0

@@ -40,18 +40,19 @@ def mission_callback(msg):
         return find_coffin()
 
 
-def to_box(box=0, area=0.0, color=(0, 255, 0), center=True):
+def to_box(box=0, area=0.0,state=0, color=(0, 255, 0), center=False):
     shape = image.display.shape[:2]
     sort = sorted(box, key=lambda x: x[0])
     bottom = sort[:2]
     bottom = sorted(bottom, key=lambda x: x[1])
     pt4 = bottom[0]
-    pt2 = bottom[1]
+    pt1 = bottom[1]
     top = sort[2:]
     top = sorted(top, key=lambda x: x[1])
     pt3 = top[0]
-    pt1 = top[1]
+    pt2 = top[1]
     msg = VisionBox()
+    msg.state = state
     for i in range(1, 5):
         print('pt'+str(i), tuple(eval('pt'+str(i))))
         cv.putText(image.display, str(i), tuple(eval('pt'+str(i))),
@@ -73,18 +74,19 @@ def to_box(box=0, area=0.0, color=(0, 255, 0), center=True):
         msg.point_2 = transform.convert_to_point(pt2, shape)
         msg.point_3 = transform.convert_to_point(pt3, shape)
         msg.point_4 = transform.convert_to_point(pt4, shape)
-    msg.area = transform.convert(area, shape[0]*shape[1])
+    msg.area = 1.0*area/(shape[0]*shape[1])
     return msg
 
 
-def message(box1=0, box2=0, state=0):
+def message(box1=0,area1=0, box2=0, area2=0, state=0):
     response = VisionSrvCoffinResponse()
     if state <= 0:
+        output.log("NOT FOUND", AnsiCode.RED)
         return response
     response.state = state
     if box2 == 0:
         print('a1', box1)
-        response.data = [to_box(box=box1), VisionBox()]
+        response.data = [to_box(box=box1,area=area1,state=state), VisionBox()]
     else:
         response.data = [to_box(box=box1), to_box(box=box2)]
     output.publish(image.display, 'bgr', '/display')
@@ -94,9 +96,10 @@ def message(box1=0, box2=0, state=0):
 
 def get_mask():
     image.to_hsv()
+    blur = cv.medianBlur(image.hsv,11)
     upper = np.array([72, 255, 255], dtype=np.uint8)
     lower = np.array([28, 0, 0], dtype=np.uint8)
-    mask = cv.inRange(image.hsv, lower, upper)
+    mask = cv.inRange(blur, lower, upper)
     return mask
 
 
@@ -114,7 +117,9 @@ def find_coffin():
         if cv.contourArea(cnt) < 10000:
             continue
         res.append(cnt)
-    cnt = sorted(res, reverse=True)
+    cnt = sorted(res, reverse=True,key=cv.contourArea)
+    if len(cnt) == 0 :
+        return message()
     rect = cv.minAreaRect(cnt[0])
     box1 = cv.boxPoints(rect)
     box1 = np.int64(box1)
@@ -127,8 +132,8 @@ def find_coffin():
     print('len(cnt)', len(cnt))
     if cnt == []:
         return message(state=0)
-    elif len(cnt) == 1:
-        return message(box1=box1, state=1)
+    elif len(cnt) >= 1:
+        return message(box1=box1,area1=cv.contourArea(cnt[0]), state=1)
     elif len(cnt) >= 2:
         return message(box1=box1, box2=box2, state=2)
     return message(state=-2)
