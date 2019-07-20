@@ -33,9 +33,10 @@ def mission_callback(msg):
         return None
     task = str(msg.task.data)
     request = str(msg.request.data)
+    print request
     if task == 'drop_garlic' :
         if request == 'search' :
-            return find_drop_garlic()
+            return find_drop_garlic(func = 'search')
         elif request == 'open' :
             return find_open()
         elif request == 'drop' :
@@ -67,22 +68,21 @@ def get_cx(box,cnt,mode) :
             cy2 = box[a][1]
     if mode == 'find_mission' and (min_box == 0 or max_box == 1000) :
         return 0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    min_y = 400
-    max_y = 0
+    min_x = 1000
+    max_x = 0
     for c in range(4) :
         if sum(box[c]) != cx2+cy2 and sum(box[c]) != cx4+cy4 :
-            if box[c][1] < min_y :
-                min_y = box[c][1]
-                cx3 = box[c][0]
-                cy3 = box[c][1]
-            if box[c][1] > max_y :
-                max_y = box[c][1]
+            if box[c][0] < min_x :
+                min_x = box[c][0]
                 cx1 = box[c][0]
                 cy1 = box[c][1]
-    if mode == 'find_mission' and (max_y == 0 or min_y == 400) :
+            if box[c][0] > max_x :
+                max_x = box[c][0]
+                cx3 = box[c][0]
+                cy3 = box[c][1]
+    if (max_x == 0 or min_x == 1000) :
         return 0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0    
-    if (mode == 'find_mission' and (cx1 <= 40 or cx2 >= 560 or cx3 >= 560 or cx4 <= 40 or cy1 >= 344 or cy2 >= 344 or cy3 <= 20 or cy4 <= 20 ) or mode == 'find_slice') and (cx1 <= 10 or cx2 >= 100 or cx3 >= 300 or cx4 <= 10 or cy1 >= 100 or cy2 >= 100 or cy3 <= 10 or cy4 <= 10 ):
-    # if (cx1 <= 10 or cx2 >= 560 or cx3 >= 560 or cx4 <= 40 or cy1 >= 70 or cy2 >= 344 or cy3 <= 20 or cy4 <= 20 ):
+    if (mode == 'find_mission' and (cx1 <= 40 or cx2 >= 560 or cx3 >= 560 or cx4 <= 40 or cy1 >= 344 or cy2 >= 344 or cy3 <= 20 or cy4 <= 20 )) or (mode == 'find_slice' and (cx1 <= 10 or cx2 >= 100 or cx3 >= 300 or cx4 <= 10 or cy1 >= 100 or cy2 >= 100 or cy3 <= 10 or cy4 <= 10 )):
         M = cv.moments(cnt)
         if M["m00"] != 0 :
             cx1 = int(M["m10"]/M["m00"])   
@@ -90,10 +90,10 @@ def get_cx(box,cnt,mode) :
         else :
             cx1 = 0
             cy1 = 0
-        return 2,cx1,cy1,0.0,0.0,0.0,0.0,0.0,0.0
+        return 2,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4
     return 1,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4
 
-def find_drop_garlic () :
+def find_drop_garlic (func) :
     image.renew_display() 
     image.to_gray()
     
@@ -123,10 +123,10 @@ def find_drop_garlic () :
     output.publish(edges,'gray','/canny_be')
     # kernel = np.ones((7,7),np.uint8)
     # edges = cv.dilate(edges,kernel)
-    output.publish(edges,'gray','/canny_af')
+    #output.publish(edges,'gray','/canny_af')
     # output.publish(ima,'gray','/1')
     # output.publish(th3,'gray','/th3')
-    output.publish(blur,'gray','/2')
+    #output.publish(blur,'gray','/2')
     output.publish(th1,'gray','/th1')
     # output.publish(otsu_th,'gray','/otsu')
     # output.publish(img_dist,'gray','/otsu_dist')
@@ -135,7 +135,7 @@ def find_drop_garlic () :
     # cnt = cv.findContours(edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
     # edges = cv.bitwise_and(edges,th1)
     edges = cv.GaussianBlur(edges,(5,5),0)
-    kernel = np.ones((1,11),np.uint8)
+    kernel = np.ones((1,21),np.uint8)
     edges = cv.dilate(edges,kernel)
     kernel = np.ones((11,1),np.uint8)
     edges = cv.dilate(edges,kernel)
@@ -146,113 +146,89 @@ def find_drop_garlic () :
     if len(cnt) > 0 :
         cnt = max(cnt,key=cv.contourArea)
         rect = cv.minAreaRect(cnt)
+        w_cnt = rect[1][0]
+        h_cnt = rect[1][1]
         box = cv.boxPoints(rect)
         box = np.int0(box)
         approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
         print len(approx)
         area = cv.contourArea(cnt)
         print area
-        if area > 3000 and len(approx) <= 20:
+        print area/(w_cnt*h_cnt)
+        if area > 3000 and area/(w_cnt*h_cnt) > 0.6:
             state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4 = get_cx(box,cnt,mode='find_mission')
             #cv.drawContours(image.display,[box],0,(255,255,255),2)
-            if state == 1 :
+            if (state == 1 or func == 'drop') and len(approx) <= 16:
                 cv.drawContours(image.display,[box],0,(255,255,255),2)
                 cv.circle(image.display, (cx4,cy4), 3, (255,0,0),-1)
                 cv.circle(image.display, (cx2,cy2), 3, (0,255,0),-1)
                 cv.circle(image.display, (cx3,cy3), 3, (0,0,255),-1)
                 cv.circle(image.display, (cx1,cy1), 3, (0,0,0),-1)
-            elif state == 2 :
+            elif state == 2 and len(approx) <= 30 :
                 cv.circle(image.display, (cx1,cy1), 3, (255,255,255),-1)
+                cx2 = 0.0
+                cx3 = 0.0
+                cx4 = 0.0
+                cy2 = 0.0
+                cy3 = 0.0
+                cy4 = 0.0                
             output.publish(image.display,'bgr','/cnt')
-            return message(wimg,himg,state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4,area/(himg*wimg))
+            if func == 'search' :
+                return message(wimg,himg,state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4,area/(himg*wimg))
+            else :
+                return wimg,himg,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4,edges
     # cv.drawContours(image.bgr, cnt, -1, (0,0,0), 3)
-    return message(wimg,himg,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
+    if func == 'search' :
+        return message(wimg,himg,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
+    else :
+        return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0
 
 def find_drop() :
-    image.renew_display()
-    image.to_gray()
-    blur = cv.GaussianBlur(image.gray,(5,5),0)
-    himg,wimg = blur.shape
-    # print(r,c)
-    blur = blur[20:-20,:]
-    # equ = cv.equalizeHist(blur)
-    # dist = cv.distanceTransform(otsu_th, cv.DIST_L2, 5)
-    # _, img_dist = cv.threshold(dist, ret3, 1.0, cv.THRESH_BINARY)
-    # print(dist.max())
-    # print(dist.min())
-    # print(img_dist.max())
-    # print(img_dist.min())
-    # img_dist = np.uint8(255*(img_dist-img_dist.min())/(img_dist.max()-img_dist.min()))
-    # img_dist = np.uint8(img_dist)
-    # test = image.bg_subtraction(mode='pos',bg_blur_size=15,fg_blur_size=11)
-    blur = cv.GaussianBlur(image.gray,(5,5),0)
-    ret1,th1 = cv.threshold(blur,blur.max()*0.7,255,cv.THRESH_BINARY)
-    # print ret1
-    # ret3,th3 = cv.threshold(blur,ret1,255,cv.THRESH_BINARY)
-    # print ret3
-    # ret,thresh1 = cv.threshold(blur,equ.max()*0.7,255,cv.THRESH_BINARY)
-    # ret3,th3 = cv.threshold(blur,120,255,cv.THRESH_BINARY)
-    # print ret1
-    edges = cv.Canny(blur,ret1*9/10,ret1)
-    output.publish(edges,'gray','/canny_be')
-    # kernel = np.ones((7,7),np.uint8)
-    # edges = cv.dilate(edges,kernel)
-    output.publish(edges,'gray','/canny_af')
-    # output.publish(ima,'gray','/1')
-    # output.publish(th3,'gray','/th3')
-    output.publish(blur,'gray','/2')
-    output.publish(th1,'gray','/th1')
-    # output.publish(otsu_th,'gray','/otsu')
-    # output.publish(img_dist,'gray','/otsu_dist')
-    # output.publish(img_dist,'gray','/otsu_dist')
-    # output.publish(test,'gray','/test')
-    # cnt = cv.findContours(edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
-    # edges = cv.bitwise_and(edges,th1)
-    edges = cv.GaussianBlur(edges,(5,5),0)
-    kernel = np.ones((1,11),np.uint8)
-    edges = cv.dilate(edges,kernel)
-    kernel = np.ones((11,1),np.uint8)
-    edges = cv.dilate(edges,kernel)
-    output.publish(edges,'gray','/test')
-    # for i in edges :
-    cnt = cv.findContours(edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+    cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4,edges = find_drop_garlic(func = 'drop')
+    if cx1 < 0 or cx2 < 0 or cx3 < 0 or cx4 < 0 or cy1 < 0 or cy2 < 0 or cy3 < 0 or cy4 <0 :
+        return message(wimg,himg,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
+    edges = edges[min(int(cy4),int(cy3)):max(int(cy1),int(cy2)),min(int(cx1),int(cx4)):max(int(cx2),int(cx3))]
+    print cy4
+    print cy3
+    print cy1
+    print cy2
+    print cx1
+    print cx4
+    print cx2
+    print cx3
+    output.publish(edges,'gray','/test2')
+    #ret1,th1 = cv.threshold(gray,gray.max()*0.7,255,cv.THRESH_BINARY)
+    #th1 = cv.bitwise_not(th1)
+    #edges = cv.Canny(blur,ret1*9/10,ret1)
+    #output.publish(edges,'gray','/canny_be')
+    #output.publish(th1,'gray','/th1_2')
+    # gray[gray>40] = 255
+    # gray[gray<40] = 0
+    gray = cv.bitwise_not(edges)
+    cnt = cv.findContours(gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+    output.publish(gray,'gray','/gray_not')
     # print type(cnt)
     if len(cnt) > 0 :
-        cnt = max(cnt,key=cv.contourArea)
-        rect = cv.minAreaRect(cnt)
-        box = cv.boxPoints(rect)
-        box = np.int0(box)
-        state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4 = get_cx(box,cnt,mode='find_mission')
-        area = cv.contourArea(cnt)
-        approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
-        if area > 3000 and len(approx) <= 15:
-            gray = image.gray[max(int(cy4),int(cy3)):min(int(cy1),int(cy2)),max(int(cx1),int(cx4)):min(int(cx2),int(cx3))]
-            print area
-            print len(approx)
-            output.publish(gray,'gray','/test')
-            ret1,th1 = cv.threshold(gray,gray.max()*0.7,255,cv.THRESH_BINARY)
-            th1 = cv.bitwise_not(th1)
-            output.publish(th1,'gray','/th1')
-            cnt = cv.findContours(gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
-            # print type(cnt)
-            if len(cnt) > 0 :
-                cnt = max(cnt,key=cv.contourArea)
-                area_slice = cv.contourArea(cnt)
-                rect = cv.minAreaRect(cnt)
+        for c in cnt :
+            approx = cv.approxPolyDP(c,0.01*cv.arcLength(c,True),True)
+            if len(approx <= 10) :
+        #cnt = max(cnt,key=cv.contourArea)
+                area_slice = cv.contourArea(c)
+                rect = cv.minAreaRect(c)
                 box = cv.boxPoints(rect)
                 box = np.int0(box)
-                state,cx1_d,cy1_d,cx2_d,cy2_d,cx3_d,cy3_d,cx4_d,cy4_d = get_cx(box,cnt,mode = 'find_slice')
-                # print cy1
-                # print cy1_d
-                # print ('-----')
-                cx1 += cx1_d
-                cy1 -= cy1_d
-                cx2 -= cx2_d
-                cy2 -= cy2_d
-                cx3 -= cx3_d
-                cy3 += cy3_d
-                cx4 += cx4_d
-                cy4 -= cy4_d
+                state,cx1_d,cy1_d,cx2_d,cy2_d,cx3_d,cy3_d,cx4_d,cy4_d = get_cx(box,c,mode = 'find_slice')
+        # print cy1
+        # print cy1_d
+        # print ('-----')
+                cx1 = cx1_d+cx1
+                cy1 = cy1-cy1_d
+                cx2 = cx1+cx2_d
+                cy2 = cy4+cy2_d
+                cx3 = cx4+cx3_d
+                cy3 = cy1-cy3_d
+                cx4 = cx4+cx4_d
+                cy4 = cy4+cy4_d
                 box[0][0] = cx1
                 box[0][1] = cy1
                 box[1][0] = cx2
@@ -261,18 +237,19 @@ def find_drop() :
                 box[2][1] = cy3
                 box[3][0] = cx4
                 box[3][1] = cy4
-                # cv.drawContours(image.bgr,[[[cx1,cy1],[cx2,cy2],[cx3,cy3],[cx4,cy4]]],0,(255,255,255),2)
-                #cv.drawContours(image.bgr,[box],0,(255,255,255),2)
+        # cv.drawContours(image.bgr,[[[cx1,cy1],[cx2,cy2],[cx3,cy3],[cx4,cy4]]],0,(255,255,255),2)
+        #cv.drawContours(image.bgr,[box],0,(255,255,255),2)
                 if state == 1 :
                     cv.drawContours(image.display,[box],0,(255,255,255),2)
                     cv.circle(image.display, (cx4,cy4), 3, (255,0,0),-1)
                     cv.circle(image.display, (cx2,cy2), 3, (0,255,0),-1)
                     cv.circle(image.display, (cx3,cy3), 3, (0,0,255),-1)
                     cv.circle(image.display, (cx1,cy1), 3, (0,0,0),-1)
+                    return message(wimg,himg,state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4,area_slice/(himg*wimg))
                 elif state == 2 :
-                    cv.circle(image.display, (cx1,cy1), 5, (255,255,255),-1)
-                output.publish(image.display,'bgr','/cnt')
-                return message(wimg,himg,state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4,area_slice/(himg*wimg))
+                    cv.circle(image.display, (int(cx1),int(cy1)), 5, (255,255,255),-1)
+                    return message(wimg,himg,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
+                output.publish(image.display,'bgr','/cnt') 
     # cv.drawContours(image.bgr, cnt, -1, (0,0,0), 3)
     return message(wimg,himg,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
 
