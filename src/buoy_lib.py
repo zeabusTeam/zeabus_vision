@@ -46,7 +46,8 @@ class Buoy:
 
         # Load Ref img
         filedir = os.path.dirname(os.path.abspath(__file__))
-        self.jiangshi = cv2.imread(os.path.join(filedir, 'jiangshi.png'), 0)
+        self.jiangshi = cv2.imread(os.path.join(
+            filedir, 'pictures', 'jiangshi.png'), 0)
         # self.jiangshi = cv2.resize(self.jiangshi, None, fx=0.1, fy=0.1)
         # self.jiangshi = cv2.medianBlur(self.jiangshi, 7)
         self.sift = cv2.xfeatures2d.SIFT_create()
@@ -134,7 +135,8 @@ class Buoy:
 
         height, width = self.jiangshi.shape[:2]
         cropped = cv2.warpPerspective(self.img_sm, h, (width, height))
-        trainBorder = np.float32([[[0, 0], [0, height-1], [width-1, height-1], [width-1, 0]]])
+        trainBorder = np.float32(
+            [[[0, 0], [0, height-1], [width-1, height-1], [width-1, 0]]])
         queryBorder = cv2.perspectiveTransform(trainBorder, inv_h)
 
         result.cropped_img = cropped
