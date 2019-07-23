@@ -53,6 +53,51 @@ def message(wimg,himg,state,cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, cx3=0.0, cy3=0.0
     print msg
     return msg
 
+def get_mask():
+    image.renew_display()
+    # test = image.bg_subtraction(mode='pos',bg_blur_size=211,fg_blur_size=11)
+    # pub.publish_result(test,'gray','/bg_sub')
+    max_iter = 5
+    # publish_result(obj_pos, "gray", "/path_obj_pos")
+    mask = image.bg_subtraction_kmean(image.display, bg_k=1, fg_k=3, mode='pos',max_iter=max_iter)
+    # return mask
+    # upper = np.array([238, 255, 255], dtype=np.uint8)
+    # lower = np.array([50, 0, 0], dtype=np.uint8)
+    # mask = cv.inRange(image.hsv, lower, upper)
+    # mask = cv.medianBlur(mask,5)
+    # mask = cv.bitwise_not(mask)
+    # test = image.bg_subtraction(mode='pos',bg_blur_size=211,fg_blur_size=11)
+    # pub.publish_result(test,'gray','/bg_sub')
+    #image.to_hsv()
+    #upper = np.array([238, 255, 255], dtype=np.uint8)
+    #lower = np.array([50, 0, 0], dtype=np.uint8)
+    #mask = cv.inRange(image.hsv, lower, upper)
+    #mask = cv.medianBlur(mask,5)
+    #mask = cv.bitwise_not(mask)
+    output.publish(mask,'gray','/mask')
+
+    image.to_gray()
+    output.publish(image.gray,'gray','/gray')
+    # test = image.bg_subtraction(mode='pos',bg_blur_size=211,fg_blur_size=11)
+    # pub.publish_result(test,'gray','/bg_sub')
+    # test[test >= 250] = 255
+    # test[test < 250] = 0
+    # image.gray[image.gray >= 100] = 255
+    # image.gray[image.gray < 100] = 0
+    # mask = test
+    # image.gray = cv.bitwise_not(image.gray)
+    # mask = cv.bitwise_not(mask)
+    # mask = cv.bitwise_and(test,mask)
+
+    # pub.publish_result(image.gray,'gray','/path')
+    # mask = cv.bitwise_and(mask,test)
+    # kernel = np.ones((5, 5), dtype=np.uint8)
+    # mask = cv.GaussianBlur(mask, (5, 5), 0)
+    # pub.publish_result(mask,'gray','/test')
+    # mask = cv.erode(mask, kernel)
+    # mask = cv.dilate(mask, kernel)
+    # pub.publish_result(mask,'gray','/path/ed')
+    return mask
 def get_cx(box,cnt,mode) :
     min_box = 1000
     max_box = 0
@@ -141,6 +186,7 @@ def find_drop_garlic (func) :
     edges = cv.dilate(edges,kernel)
     output.publish(edges,'gray','/test')
     # for i in edges :
+    mask = get_mask()
     cnt = cv.findContours(edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
     # print type(cnt)
     if len(cnt) > 0 :
@@ -150,7 +196,7 @@ def find_drop_garlic (func) :
         h_cnt = rect[1][1]
         box = cv.boxPoints(rect)
         box = np.int0(box)
-        approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
+        approx = cv.approxPolyDP(cnt,0.025*cv.arcLength(cnt,True),True)
         print len(approx)
         area = cv.contourArea(cnt)
         print area
@@ -158,13 +204,13 @@ def find_drop_garlic (func) :
         if area > 3000 and area/(w_cnt*h_cnt) > 0.6:
             state,cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4 = get_cx(box,cnt,mode='find_mission')
             #cv.drawContours(image.display,[box],0,(255,255,255),2)
-            if (state == 1 or func == 'drop') and len(approx) <= 16:
+            if (state == 1 or func == 'drop') and len(approx) <= 10:
                 cv.drawContours(image.display,[box],0,(255,255,255),2)
                 cv.circle(image.display, (cx4,cy4), 3, (255,0,0),-1)
                 cv.circle(image.display, (cx2,cy2), 3, (0,255,0),-1)
                 cv.circle(image.display, (cx3,cy3), 3, (0,0,255),-1)
                 cv.circle(image.display, (cx1,cy1), 3, (0,0,0),-1)
-            elif state == 2 and len(approx) <= 30 :
+            elif state == 2 and len(approx) <= 15 :
                 cv.circle(image.display, (cx1,cy1), 3, (255,255,255),-1)
                 cx2 = 0.0
                 cx3 = 0.0

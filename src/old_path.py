@@ -117,7 +117,7 @@ def get_obj(mask):
         return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     print (w*h)
     print (wimg*himg)
-    if (w*h)/(wimg*himg) >= 2/3 :
+    if (w*h)/(wimg*himg) >= 2.0/3 :
         return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     #if h < w*3/4 :
     	#return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
@@ -125,42 +125,22 @@ def get_obj(mask):
     y_bot_crop = y
     x_right_crop = x
     for i in range (1,7) :
-        if w/h <= 1.5 :
-            x_left_crop = x_right_crop
-            x_right_crop = x+(w*i/7)
+        y_top_crop = y_bot_crop
+        y_bot_crop = y+(h*i/7)
         # print i
         # print h
         # print y_top_crop
         # print y_bot_crop
-            crop = mask[y:y+h,x_left_crop:x_right_crop]
-            cnt_crop = max(cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
+        crop = mask[y_top_crop:y_bot_crop,x:x+w]
+        cnt_crop = max(cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
         # cv.rectangle(mask,(x,y_top_crop),(x+w,y_bot_crop),(255,255,255),2)
-            M = cv.moments(cnt_crop)
-            if M["m00"] != 0 :
-                cx_crop = int(M["m10"]/M["m00"]) + x_left_crop  
-                cy_crop = int(M["m01"]/M["m00"]) + y
-            else :
-                cx_crop = 0
-                cy_crop = 0
-        # cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
-        # pub.publish_result(mask,'gray','/p')
+        M = cv.moments(cnt_crop)
+        if M["m00"] != 0 :
+            cx_crop = int(M["m10"]/M["m00"]) + x  
+            cy_crop = int(M["m01"]/M["m00"]) + y_top_crop
         else :
-            y_top_crop = y_bot_crop
-            y_bot_crop = y+(h*i/7)
-        # print i
-        # print h
-        # print y_top_crop
-        # print y_bot_crop
-            crop = mask[y_top_crop:y_bot_crop,x:x+w]
-            cnt_crop = max(cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
-        # cv.rectangle(mask,(x,y_top_crop),(x+w,y_bot_crop),(255,255,255),2)
-            M = cv.moments(cnt_crop)
-            if M["m00"] != 0 :
-                cx_crop = int(M["m10"]/M["m00"]) + x  
-                cy_crop = int(M["m01"]/M["m00"]) + y_top_crop
-            else :
-                cx_crop = 0
-                cy_crop = 0
+            cx_crop = 0
+            cy_crop = 0
         # cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
         # pub.publish_result(mask,'gray','/p')
         area_crop = cv.contourArea(cnt_crop)

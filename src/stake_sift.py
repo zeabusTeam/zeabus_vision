@@ -35,6 +35,7 @@ def mission_callback(msg):
     """
     task = str(msg.task.data)
     request = str(msg.request.data)
+    print('task',task,'req',request)
     if task == 'stake' and request == 'vampire':
         return find_vampire()
     elif task == 'stake' and request == 'heart':
@@ -69,6 +70,8 @@ def to_box(state=0, box=0, color=(0, 255, 0), area=0.0, center=True):
     print(shape[0]*shape[1], 'shape')
     if area == -1:
         msg.area = q_area(box)/(shape[0]*shape[1])
+    elif area > 0:
+        msg.area = area/(shape[0]*shape[1])
     for i in range(1, 5):
         print('pt'+str(i), tuple(eval('pt'+str(i))))
         cv.putText(image.display, str(i), tuple(eval('pt'+str(i))),
@@ -235,7 +238,8 @@ def find_hole(request):
     box = np.int64(box_data)
     cv.drawContours(image.display, [box], 0, (0, 255, 0), 2)
     output.publish(image.display, 'bgr', 'heart')
-    return message(box=box, area=box_data[1][0]*box_data[1][1], center=True)
+    print(box_data[1][0],box_data[1][1])
+    return message(state=1,box=box, area=box_data[1][0]*box_data[1][1], center=True)
 
 
 def nothing(x):
