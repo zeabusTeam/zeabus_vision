@@ -104,23 +104,33 @@ def get_obj(mask):
     angle.append(0)
     turn_point = 0
     old_ang = 0
+    cx1 = 0.0 
+    cy1 = 0.0 
+    cx2 = 0.0 
+    cy2 = 0.0 
+    cx3 = 0.0 
+    cy3 = 0.0 
+    area1 = 0.0 
+    area2 = 0.0 
+    n_point = 0.0
     himg, wimg = mask.shape[:2]
-    contour = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+    contour = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)[1]
     if len(contour) == 0:
 		return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     for cnt in contour :
-        cnt = max(cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
         area = cv.contourArea(cnt)
         x,y,w,h = cv.boundingRect(cnt)
         minarea = 1500
-        maxarea = w*h/10
-        print area
-        if minarea < area < maxarea :
+        maxarea = wimg*himg/10
+        ratio_area = w*h/10
+        # print "maxarea = " + str(w*h/10)
+        print "area = " + str(area)
+        if minarea >= area or area >= maxarea or area <= ratio_area:
             print "area return"
-            return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+            continue
         if float(w*h)/(wimg*himg) >= float(2/3.0) :
             print "ratio return"
-            return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+            continue
         #if h < w*3/4 :
             #return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
         # cv.rectangle(mask,(x,y),(x+w,y+h),(255,255,255),2)
@@ -128,151 +138,212 @@ def get_obj(mask):
         x_right_crop = x
         area_crop = 0
         approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
-        print "len(approx) = " + str(len(approx))
-        print "w/h = " + str(w*1.0/h*1.0)
-    # print "w/h = " + str(w/h)
-        if len(approx) >= 15 :
+        # print "len(approx) = " + str(len(approx))
+        # print "w/h = " + str(w*1.0/h*1.0)
+        # print "w/h = " + str(w/h)
+        if len(approx) > 15 :
             print "len(approx) return"
             return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    for i in range (1,10) :
+        for i in range (1,10) :
         # print "w/h = " + str(w*1.0/h*1.0)
-        if w*1.0/h*1.0 >= 1.5 :
-            print "cut x"
-            x_left_crop = x_right_crop
-            x_right_crop = x+(w*i/10)
+            if w*1.0/h*1.0 >= 1.5 :
+                print "cut x"
+                x_left_crop = x_right_crop
+                x_right_crop = min(x+(w*i/10), wimg)
         # print i
         # print h
         # print y_top_crop
         # print y_bot_crop
-            crop = mask[y:y+h,x_left_crop:x_right_crop]
-            cnt_crop = max(cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
+                crop = mask[y:min(y+h,himg),x_left_crop:x_right_crop]
+                # if len(crop) > 0 :
+                cnt_tmp = cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)[1]
         # cv.rectangle(mask,(x,y_top_crop),(x+w,y_bot_crop),(255,255,255),2)
-            M = cv.moments(cnt_crop)
-            if M["m00"] != 0 :
-                cx_crop = int(M["m10"]/M["m00"]) + x_left_crop  
-                cy_crop = int(M["m01"]/M["m00"]) + y
-            else :
-                cx_crop = 0
-                cy_crop = 0
+                if len(cnt_tmp) > 0:
+                    cnt_crop = max(cnt_tmp,key=cv.contourArea)
+                    M = cv.moments(cnt_crop)
+                    if M["m00"] != 0 :
+                        cx_crop = int(M["m10"]/M["m00"]) + x_left_crop  
+                        cy_crop = int(M["m01"]/M["m00"]) + y
+                    else :
+                        cx_crop = 0
+                        cy_crop = 0
+                else:
+                    
+                    continue
         # cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
         # pub.publish_result(mask,'gray','/p')
-        else :
-            print "cut y"
-            y_top_crop = y_bot_crop
-            y_bot_crop = y+(h*i/10)
+            else :
+                print "cut y"
+                y_top_crop = y_bot_crop
+                y_bot_crop = min(y+(h*i/10),himg)
         # print i
         # print h
         # print y_top_crop
         # print y_bot_crop
-            crop = mask[y_top_crop:y_bot_crop,x:x+w]
-            cnt_crop = max(cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
+
+                crop = mask[y_top_crop:y_bot_crop,x:min(x+w,wimg)]
+                # cnt_crop = max(cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
         # cv.rectangle(mask,(x,y_top_crop),(x+w,y_bot_crop),(255,255,255),2)
-            M = cv.moments(cnt_crop)
-            if M["m00"] != 0 :
-                cx_crop = int(M["m10"]/M["m00"]) + x  
-                cy_crop = int(M["m01"]/M["m00"]) + y_top_crop
-            else :
-                cx_crop = 0
-                cy_crop = 0
-        cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
-        # pub.publish_result(mask,'gray','/p')
-        old_area_crop = area_crop
-        area_crop = cv.contourArea(cnt_crop)
-        if i > 1 and area_crop - old_area_crop > 500 :
-            print "diff area return"
-            return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0    
-        print ("area_crop = " + str(area_crop))
-        cx.append(cx_crop)
-        cy.append(cy_crop)
-        # print ("cy[i] = " + str(cy[i]) )
-        # print ("cy[i-1] = " + str(cy[i-1]) )
-        # print ("cx[i] = " + str(cx[i]) )
-        # print ("cx[i-1] = " + str(cx[i-1]) )
-        ang_crop = math.atan2(cy[i]-cy[i-1],cx[i]-cx[i-1])
-        ang_crop = math.degrees(ang_crop)
-        # ang_crop = math.atan2(cy[i] - cy[i-1],cx[i] - cx[i-1])*180/math.pi
-        angle.append(ang_crop)
-        diff = ang_crop - old_ang
-        # print ("now = " + str(ang_crop) + " pass = " + str(old_ang) + " diff = " + str(diff))
-        if (i > 2) and (abs(ang_crop - old_ang) > 18) :
-            turn_point = i-1
-        old_ang = ang_crop
-    if turn_point != 0 :
-        first_ang = math.atan2(cy[1]-cy[turn_point],cx[1]-cx[turn_point])
-        first_ang = math.degrees(first_ang)
-        last_ang = math.atan2(cy[turn_point]-cy[6],cx[turn_point]-cx[6])
-        last_ang = math.degrees(last_ang)
+                # else :
+                cnt_tmp = cv.findContours(crop, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)[1]
+
+                if len(cnt_tmp) > 0:
+                    cnt_crop = max(cnt_tmp,key=cv.contourArea)
+                    M = cv.moments(cnt_crop)
+                    if M["m00"] != 0 :
+                        cx_crop = int(M["m10"]/M["m00"]) + x  
+                        cy_crop = int(M["m01"]/M["m00"]) + y_top_crop
+                    else :
+                        cx_crop = 0
+                        cy_crop = 0
+                else:
+                    continue
+            cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
+            # pub.publish_result(mask,'gray','/p')
+            old_area_crop = area_crop
+            area_crop = cv.contourArea(cnt_crop)
+            if i > 1 and area_crop - old_area_crop > 700 :
+                print "diff area return"
+                return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0    
+            # print ("area_crop = " + str(area_crop))
+            cx.append(cx_crop)
+            cy.append(cy_crop)
+            # print ("cy[i] = " + str(cy[i]) )
+            # print ("cy[i-1] = " + str(cy[i-1]) )
+            # print ("cx[i] = " + str(cx[i]) )
+            # print ("cx[i-1] = " + str(cx[i-1]) )
+            # ang_crop = math.atan2(cy[i]-cy[i-1],cx[i]-cx[i-1])
+            if len(cy) >= 2:
+                ang_crop = math.atan2(cy[-1]-cy[-2],cx[-1]-cx[-2])
+                ang_crop = math.degrees(ang_crop)
+                # ang_crop = math.atan2(cy[i] - cy[i-1],cx[i] - cx[i-1])*180/math.pi
+                angle.append(ang_crop)
+                diff = abs(ang_crop - old_ang)
+                # print ("now = " + str(ang_crop) + " pass = " + str(old_ang) + " diff = " + str(diff))
+                if (i > 2 and diff > 18) :
+                    # turn_point = i-1
+                    turn_point = len(cy)-1
+                old_ang = ang_crop
+        print turn_point
+        if turn_point != 0 :
+            first_ang = math.atan2(cy[1]-cy[turn_point],cx[1]-cx[turn_point])
+            first_ang = math.degrees(first_ang)
+            # last_ang = math.atan2(cy[turn_point]-cy[6],cx[turn_point]-cx[6])
+            last_ang = math.atan2(cy[turn_point]-cy[-1],cx[turn_point]-cx[-1])
+            last_ang = math.degrees(last_ang)
         # print ("f - l = " + str((abs(first_ang - last_ang))))
-        if (abs(first_ang - last_ang) < 25) :
-            turn_point = 0
-    if turn_point == 0 :
-		#if h < w :
-			#return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-		#else :
-		n_point = 2
-		area1 = cv.contourArea(cnt)/(himg*wimg)
-		area2 = 0.0
-		cx1 = cx[9]
-		cy1 = cy[9]
-		cx2 = cx[1]
-		cy2 = cy[1]
- 		cx3 = 0.0
- 		cy3 = 0.0
-    else :
-        n_point = 3
-        # crop_top = mask[y:y+(turn_point*h/10),x:x+w]
-        # cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
-        # area1 = cv.contourArea(cnt_top)/(himg*wimg)
-        # crop_bot = mask[y+(turn_point*h/10):y+h,x:x+w]
-        # cnt_bot = max(cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
-        # area2 = cv.contourArea(cnt_bot)/(himg*wimg)
-        # cv.rectangle(mask,(x,y),(x+w,y+(turn_point*h/10)),(255,255,255),2)
-        # cv.rectangle(mask,(x,y+(turn_point*h/10)),(x+w,y+h),(255,255,255),2)
-        cx1 = cx[9]
-        cy1 = cy[9]
-        cx3 = cx[1]
-        cy3 = cy[1]
-        cx2 = cx[turn_point]
-        cy2 = cy[turn_point]
-        crop_top = mask[y:cy2,x:x+w]
-        cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
-        area2 = cv.contourArea(cnt_top)/(himg*wimg)
-        crop_bot = mask[cy2:y+h,x:x+w]
-        cnt_bot = max(cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
-        area1 = cv.contourArea(cnt_bot)/(himg*wimg)
-        cv.rectangle(mask,(x,y),(x+w,cy2),(255,255,255),2)
-        cv.rectangle(mask,(x,cy2),(x+w,y+h),(255,255,255),2)
-    
-    if cx1 > wimg : 
-        cx1 = wimg 
-    elif cx1 < 0 :
-        cx1 = 0
-    if cx2 > wimg : 
-        cx2 = wimg 
-    elif cx2 < 0 :
-        cx2 = 0
-    if cx3 > wimg : 
-        cx3 = wimg
-    elif cx3 < 0 :
-        cx3 = 0 
-    if cy1 > wimg : 
-        cy1 = wimg
-    elif cy1 < 0 :
-        cy1 = 0 
-    if cy2 > wimg : 
-        cy2 = wimg
-    elif cy2 < 0 :
-        cy2 = 0 
-    if cy3 > wimg : 
-        cy3 = wimg
-    elif cy3 < 0 :
-        cy3 = 0  
-    # print turn_point 
-    cv.circle(mask,(int(cx1),int(cy1)),3,(0, 255, 255), -1)
-    cv.circle(mask,(int(cx2),int(cy2)),3,(0, 255, 255), -1)
-    cv.circle(mask,(int(cx3),int(cy3)),3,(0, 255, 255), -1)
-    output.publish(mask,'gray','/p')
-    return wimg,himg,cx1,cy1,cx2,cy2,cx3,cy3,area1,area2,n_point
+            if (abs(first_ang - last_ang) < 25) :
+                turn_point = 0
+        # if turn_point == 0 or turn_point == len(cy):
+        if turn_point == 0:
+        #if h < w :
+            #return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+        #else :
+            n_point = 2
+            area1 = cv.contourArea(cnt)/(himg*wimg)
+            area2 = 0.0
+            # cx1 = cx[9]
+            # cy1 = cy[9]
+            # cx2 = cx[1]
+            # cy2 = cy[1]
+            
+            if len(cx) >= 2 and sum(cx) > 0 and sum(cy) > 0:
+                # print("==========debug===============")
+                print(cx,cy)
+                if cy[1] > cy[-1] :
+                    cx1 = cx[1]
+                    cy1 = cy[1]
+                    cx2 = cx[-1]
+                    cy2 = cy[-1]
+                else :
+                    cx1 = cx[-1]
+                    cy1 = cy[-1]
+                    cx2 = cx[1]
+                    cy2 = cy[1]
+                cx3 = 0.0
+                cy3 = 0.0
+                cv.putText(mask,"1",(cx1-30,cy1),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+                cv.putText(mask,"2",(cx2-30,cy2),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+            else:
+                cx1 = 0.0
+                cy1 = 0.0
+                cx2 = 0.0
+                cy2 = 0.0
+                cx3 = 0.0
+                cy3 = 0.0
+                n_point = 0
+        else :
+            print(cx,cy)
+            n_point = 3
+            # crop_top = mask[y:y+(turn_point*h/10),x:x+w]
+            # cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
+            # area1 = cv.contourArea(cnt_top)/(himg*wimg)
+            # crop_bot = mask[y+(turn_point*h/10):y+h,x:x+w]
+            # cnt_bot = max(cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
+            # area2 = cv.contourArea(cnt_bot)/(himg*wimg)
+            # cv.rectangle(mask,(x,y),(x+w,y+(turn_point*h/10)),(255,255,255),2)
+            # cv.rectangle(mask,(x,y+(turn_point*h/10)),(x+w,y+h),(255,255,255),2)
+            
+            index = int(len(cy)/2)
+
+
+            if cy[1] > cy[-1] :
+                cx1 = cx[1]
+                cy1 = cy[1]
+                cx3 = cx[-1]
+                cy3 = cy[-1]
+            else :
+                cx1 = cx[-1]
+                cy1 = cy[-1]
+                cx3 = cx[1]
+                cy3 = cy[1]
+
+            print(index)
+
+            cx2 = cx[index]
+            cy2 = cy[index]
+            cv.putText(mask,"1",(cx1-30,cy1),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+            cv.putText(mask,"2",(cx2-30,cy2),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+            cv.putText(mask,"3",(cx3-30,cy3),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+            # crop_top = mask[y:cy2,x:x+w]
+            # cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
+            # area2 = cv.contourArea(cnt_top)/(himg*wimg)
+            # crop_bot = mask[cy2:y+h,x:x+w]
+            # cnt_bot = max(cv.findContours(crop_bot, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
+            # area1 = cv.contourArea(cnt_bot)/(himg*wimg)
+            # cv.rectangle(mask,(x,y),(x+w,cy2),(255,255,255),2)
+            # cv.rectangle(mask,(x,cy2),(x+w,y+h),(255,255,255),2)
+        if cx1 > wimg : 
+            cx1 = wimg 
+        elif cx1 < 0 :
+            cx1 = 0
+        if cx2 > wimg : 
+            cx2 = wimg 
+        elif cx2 < 0 :
+            cx2 = 0
+        if cx3 > wimg : 
+            cx3 = wimg
+        elif cx3 < 0 :
+            cx3 = 0 
+        if cy1 > wimg : 
+            cy1 = wimg
+        elif cy1 < 0 :
+            cy1 = 0 
+        if cy2 > wimg : 
+            cy2 = wimg
+        elif cy2 < 0 :
+            cy2 = 0 
+        if cy3 > wimg : 
+            cy3 = wimg
+        elif cy3 < 0 :
+            cy3 = 0  
+        # print turn_point 
+        cv.circle(mask,(int(cx1),int(cy1)),3,(0, 255, 255), -1)
+        cv.circle(mask,(int(cx2),int(cy2)),3,(0, 255, 255), -1)
+        cv.circle(mask,(int(cx3),int(cy3)),3,(0, 255, 255), -1)
+        output.publish(mask,'gray','/p')
+        return wimg,himg,cx1,cy1,cx2,cy2,cx3,cy3,area1,area2,n_point
+    return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
             # t_top = y  
             # b_top = y+(h/10)
             # t_mid = ((y+h)/2)-(h/10)
