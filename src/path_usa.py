@@ -110,24 +110,39 @@ def get_obj(mask):
 		return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     cnt = max(cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
     area = cv.contourArea(cnt)
-    if area < 2500:
+    print area
+    if area < 1500:
+        print "area return"
     	return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     x,y,w,h = cv.boundingRect(cnt)
+    print w*h/10
     if area < w*h/10:
+        print "ratio1 return"
         return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    print (w*h)
-    print (wimg*himg)
-    if (w*h)/(wimg*himg) >= 2/3 :
+    print float(w*h)/(wimg*himg) 
+    # print float(2/3.0)
+    if float(w*h)/(wimg*himg) >= float(2/3.0) :
+        print "ratio2 return"
         return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     #if h < w*3/4 :
     	#return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     # cv.rectangle(mask,(x,y),(x+w,y+h),(255,255,255),2)
     y_bot_crop = y
     x_right_crop = x
-    for i in range (1,7) :
-        if w/h <= 1.5 :
+    area_crop = 0
+    approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
+    print "len(approx) = " + str(len(approx))
+    print "w/h = " + str(w*1.0/h*1.0)
+    # print "w/h = " + str(w/h)
+    if len(approx) >= 15 :
+        print "len(approx) return"
+        return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+    for i in range (1,10) :
+        # print "w/h = " + str(w*1.0/h*1.0)
+        if w*1.0/h*1.0 >= 1.5 :
+            print "cut x"
             x_left_crop = x_right_crop
-            x_right_crop = x+(w*i/7)
+            x_right_crop = x+(w*i/10)
         # print i
         # print h
         # print y_top_crop
@@ -145,8 +160,9 @@ def get_obj(mask):
         # cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
         # pub.publish_result(mask,'gray','/p')
         else :
+            print "cut y"
             y_top_crop = y_bot_crop
-            y_bot_crop = y+(h*i/7)
+            y_bot_crop = y+(h*i/10)
         # print i
         # print h
         # print y_top_crop
@@ -161,9 +177,13 @@ def get_obj(mask):
             else :
                 cx_crop = 0
                 cy_crop = 0
-        # cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
+        cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
         # pub.publish_result(mask,'gray','/p')
+        old_area_crop = area_crop
         area_crop = cv.contourArea(cnt_crop)
+        if i > 1 and area_crop - old_area_crop > 500 :
+            print "diff area return"
+            return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0    
         print ("area_crop = " + str(area_crop))
         cx.append(cx_crop)
         cy.append(cy_crop)
@@ -177,7 +197,7 @@ def get_obj(mask):
         angle.append(ang_crop)
         diff = ang_crop - old_ang
         # print ("now = " + str(ang_crop) + " pass = " + str(old_ang) + " diff = " + str(diff))
-        if (i > 2) and (abs(ang_crop - old_ang) > 20) :
+        if (i > 2) and (abs(ang_crop - old_ang) > 18) :
             turn_point = i-1
         old_ang = ang_crop
     if turn_point != 0 :
@@ -195,8 +215,8 @@ def get_obj(mask):
 		n_point = 2
 		area1 = cv.contourArea(cnt)/(himg*wimg)
 		area2 = 0.0
-		cx1 = cx[6]
-		cy1 = cy[6]
+		cx1 = cx[9]
+		cy1 = cy[9]
 		cx2 = cx[1]
 		cy2 = cy[1]
  		cx3 = 0.0
@@ -211,8 +231,8 @@ def get_obj(mask):
         # area2 = cv.contourArea(cnt_bot)/(himg*wimg)
         # cv.rectangle(mask,(x,y),(x+w,y+(turn_point*h/10)),(255,255,255),2)
         # cv.rectangle(mask,(x,y+(turn_point*h/10)),(x+w,y+h),(255,255,255),2)
-        cx1 = cx[6]
-        cy1 = cy[6]
+        cx1 = cx[9]
+        cy1 = cy[9]
         cx3 = cx[1]
         cy3 = cy[1]
         cx2 = cx[turn_point]
@@ -308,7 +328,7 @@ def find_path():
 if __name__ == '__main__':
     rospy.init_node('vision_path', anonymous=False)
     output.log("INIT NODE", AnsiCode.GREEN)
-    rospy.Subscriber('/vision/bottom/image_raw/compressed', CompressedImage, image.callback)
+    rospy.Subscriber('/bottom/left/image_raw/compressed', CompressedImage, image.callback)
     output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
     rospy.Service('/vision/path',
                   VisionSrvPath(), mission_callback)
