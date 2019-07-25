@@ -105,38 +105,35 @@ def get_obj(mask):
     turn_point = 0
     old_ang = 0
     himg, wimg = mask.shape[:2]
-    cnt = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
-    if len(cnt) == 0:
+    contour = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+    if len(contour) == 0:
 		return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    cnt = max(cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
-    area = cv.contourArea(cnt)
-    print area
-    if area < 1500:
-        print "area return"
-    	return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    x,y,w,h = cv.boundingRect(cnt)
-    print w*h/10
-    if area < w*h/10:
-        print "ratio1 return"
-        return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    print float(w*h)/(wimg*himg) 
-    # print float(2/3.0)
-    if float(w*h)/(wimg*himg) >= float(2/3.0) :
-        print "ratio2 return"
-        return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    #if h < w*3/4 :
-    	#return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    # cv.rectangle(mask,(x,y),(x+w,y+h),(255,255,255),2)
-    y_bot_crop = y
-    x_right_crop = x
-    area_crop = 0
-    approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
-    print "len(approx) = " + str(len(approx))
-    print "w/h = " + str(w*1.0/h*1.0)
+    for cnt in contour :
+        cnt = max(cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
+        area = cv.contourArea(cnt)
+        x,y,w,h = cv.boundingRect(cnt)
+        minarea = 1500
+        maxarea = w*h/10
+        print area
+        if minarea < area < maxarea :
+            print "area return"
+            return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+        if float(w*h)/(wimg*himg) >= float(2/3.0) :
+            print "ratio return"
+            return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+        #if h < w*3/4 :
+            #return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+        # cv.rectangle(mask,(x,y),(x+w,y+h),(255,255,255),2)
+        y_bot_crop = y
+        x_right_crop = x
+        area_crop = 0
+        approx = cv.approxPolyDP(cnt,0.01*cv.arcLength(cnt,True),True)
+        print "len(approx) = " + str(len(approx))
+        print "w/h = " + str(w*1.0/h*1.0)
     # print "w/h = " + str(w/h)
-    if len(approx) >= 15 :
-        print "len(approx) return"
-        return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+        if len(approx) >= 15 :
+            print "len(approx) return"
+            return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     for i in range (1,10) :
         # print "w/h = " + str(w*1.0/h*1.0)
         if w*1.0/h*1.0 >= 1.5 :
