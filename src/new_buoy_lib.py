@@ -150,11 +150,10 @@ class Buoy:
             cy += y
         cx = cx/4
         cy = cy/4
-        cx /= self.img_sm.shape[1]
-        cy /= self.img_sm.shape[0]
-        cx = cx*2-1
-        cy = cy*2-1
-        cy /= -1
+        cx /= self.img.shape[1]
+        cy /= self.img.shape[0]
+        cx -= 1
+        cy -= 1
 
         if self.LASTFOUND is not None:
             time_diff = time.time()-(self.LASTFOUND.time)

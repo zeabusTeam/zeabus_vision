@@ -16,25 +16,45 @@ from vision_lib import OutputTools, ImageTools, TransformTools
 image = ImageTools(sub_sampling=0.3)
 output = OutputTools(topic='/vision/stake/')
 transform = TransformTools()
+detector = Detector()
 seq = 1
 
 
-class Log:
-    def __init__(self):
-        self.time = time()
+class Detector:
+    ''' make some constant don't repeat run'''
 
-    def reset_all(self):
-        pass
+    ''' Constant '''
+    VAMPIRE_NAME = 'pictures/full-0.3-thai.png'
+    MIN_MATCH_COUNT = 20
+    FLANN_INDEX_KDITREE = 0
+
+    def __init__(self):
+        self.sift = cv.xfeatures2d.SIFT_create()
+        self.file_dir = os.path.dirname(os.path.abspath(__file__))
+        self.vampire_dir = os.path.join(self.file_dir, self.VAMPIRE_NAME, 0)
+        self.vampire_pic = cv.imread(self.vampire_dir)
+        self.flannParam = dict(algorithm=self.FLANN_INDEX_KDITREE, tree=5)
+        self.flann = cv.FlannBasedMatcher(self.flannParam, {})
+        self.train_keypoint, self.train_desc = self.compute(self.vampire_pic)
+
+    def compute(self, img):
+        result = self.sift.detectAndCompute(img, None)
+        return result
+
+    def get_train_border(self):
+        h, w = self.vampire_pic.shape[:2]
+        trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
 
 
 def mission_callback(msg):
     """
-        When call service it will run this 
+        When call service it will run this
         Returns:
             a group of process value from this program
     """
     task = str(msg.task.data)
     request = str(msg.request.data)
+    print('task', task, 'req', request)
     if task == 'stake' and request == 'vampire':
         return find_vampire()
     elif task == 'stake' and request == 'heart':
@@ -69,6 +89,8 @@ def to_box(state=0, box=0, color=(0, 255, 0), area=0.0, center=True):
     print(shape[0]*shape[1], 'shape')
     if area == -1:
         msg.area = q_area(box)/(shape[0]*shape[1])
+    elif area > 0:
+        msg.area = area/(shape[0]*shape[1])
     for i in range(1, 5):
         print('pt'+str(i), tuple(eval('pt'+str(i))))
         cv.putText(image.display, str(i), tuple(eval('pt'+str(i))),
@@ -98,12 +120,22 @@ def message(state=0, box=0, area=0.0, center=True):
     response = VisionSrvStakeResponse()
     if state < 0:
         return response
-    if state >= 1:
-        response.data = to_box(state=state, box=box, area=area, center=center)
-    output.log('pubing', AnsiCode.GREEN)
+    elif state >= 1:
+        response.data = to_box(state=state, box=box,
+                               area=area, center=center)
+    output.log('Publishing display', AnsiCode.GREEN)
+    markpoints()
     output.publish(image.display, 'bgr', 'display')
     print(response)
     return response
+
+
+def markpoints():
+    cv.rectangle(image.display, (102, 160), (188, 246), (255, 0, 0), 2)
+    cv.circle(image.display, (145, 203), 5, (0, 0, 255), 1)
+    cv.circle(image.display, (145, 203), 10, (0, 0, 255), 1)
+    cv.line(image.display, (130, 203), (160, 203), (0, 0, 255), 1)
+    cv.line(image.display, (145, 188), (145, 218), (0, 0, 255), 1)
 
 
 def find_vampire(c=0):
@@ -111,55 +143,47 @@ def find_vampire(c=0):
         output.img_is_none()
         return message(state=-1)
     image.renew_display()
-    # cv.imwrite('raw'+str(c)+'.png',image.display)
-    # detector = cv.ORB_create()
-    detector = cv.xfeatures2d.SIFT_create()
-    filedir = os.path.dirname(os.path.abspath(__file__))
-    heart_template = cv.imread(os.path.join(
-        filedir, 'pictures/full0.3.png'), 0)
-    MIN_MATCH_COUNT = 20
-    FLANN_INDEX_KDITREE = 0
-    flannParam = dict(algorithm=FLANN_INDEX_KDITREE, tree=5)
-    flann = cv.FlannBasedMatcher(flannParam, {})
-    # cv.imwrite('big-raw' + str(c) + '.png', image.display)
-    train_kp, train_des = detector.detectAndCompute(heart_template, None)
-    print(len(train_kp))
-    res = cv.drawKeypoints(heart_template.copy(), train_kp, None)
-    output.publish(res, 'bgr', 'res')
-    edges = cv.Canny(image.bgr, 200, 206)
-    queryKP, queryDesc = detector.detectAndCompute(image.display, None)
-    matches = flann.knnMatch(queryDesc, train_des, k=2)
-    res2 = cv.drawKeypoints(image.display.copy(), queryKP, None)
-    output.publish(res2, 'bgr', 'res2')
-    # cv.imshow('qkp', res2)
-    goodMatch = []
+
+    query_keypoint, query_desc = detector.compute(image.display)
+    matches = flann.knnMatch(query_desc, detector.train_desc, k=2)
+
+    good_match = []
     for m, n in matches:
         if(m.distance < 0.75*n.distance):
-            goodMatch.append(m)
+            good_match.append(m)
     himg, wimg = image.display.shape[:2]
-    cv.putText(image.display, str(len(goodMatch))+"/"+str(len(train_kp)), (0, himg),
-               cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
-    if(len(goodMatch) > MIN_MATCH_COUNT):
+
+    # print
+    cv.putText(image.display, 'vampire',
+               (0, 10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
+               2, cv.LINE_AA)
+
+    if(len(good_match) > MIN_MATCH_COUNT):
         tp = []
         qp = []
-        for m in goodMatch:
+        for m in good_match:
             tp.append(train_kp[m.trainIdx].pt)
-            qp.append(queryKP[m.queryIdx].pt)
+            qp.append(query_keypoint[m.queryIdx].pt)
         tp, qp = np.float32((tp, qp))
         H, status = cv.findHomography(tp, qp, cv.RANSAC, 3.0)
-        h, w = heart_template.shape[:2]
-        trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
-        queryBorder = cv.perspectiveTransform(trainBorder, H)
-        print('q', queryBorder[0])
-        print('qnp', [np.int32(queryBorder[0])])
+        query_border = cv.perspectiveTransform(detector.get_train_border(), H)
         cv.polylines(image.display, [np.int32(
-            queryBorder)], True, (0, 255, 0), 5)
-        return message(state=1, box=np.int64(queryBorder[0]), area=-1, center=False)
+            query_border)], True, (0, 255, 0), 5)
+        box = np.int64(query_border[0])
+
+        # print #/89 in display
+        cv.putText(image.display, str(len(good_match))+"/"+str(len(train_kp)),
+                   (0, himg-5), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
+                   2, cv.LINE_AA)
+        output.log('FOUND', AnsiCode.GREEN)
+        return message(state=1, box=box, area=-1, center=False)
     else:
-        print "Not Enough match found- %d/%d" % (
-            len(goodMatch), MIN_MATCH_COUNT)
+        # print #/89 in display
+        cv.putText(image.display, str(len(good_match))+"/"+str(len(train_kp)),
+                   (0, himg-5), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
+                   2, cv.LINE_AA)
+        output.log('NOT FOUND', AnsiCode.RED)
         return message()
-    output.publish(edges, 'gray', 'canny')
 
 
 def get_mask():
@@ -180,26 +204,41 @@ def get_template():
     return mask
 
 
-def find_heart(c=0):
+def find_heart():
     if image.bgr is None:
         output.img_is_none()
         return message(state=-1)
     image.renew_display()
     mask = get_mask()
     output.publish(mask, 'gray', 'mask')
+    kernel_vertical = image.get_kernel(ksize=(25, 25))
+    vertical = cv.erode(mask.copy(), kernel_vertical)
     contours = cv.findContours(
         mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
-    kernel_vertical = image.get_kernel(ksize=(25, 25))
     res = []
     for cnt in contours:
         if cv.contourArea(cnt) < 500:
             continue
         rect = cv.minAreaRect(cnt)
-        print(rect)
+        # ratio = (rect[1][1]/rect[1][0])*5
+        # print((rect[1][1]/rect[1][0])*5)
+        print('angle', rect[2])
         box1 = cv.boxPoints(rect)
         box1 = np.int64(box1)
         cv.drawContours(image.display, [box1], 0, (0, 0, 255), 2)
+        res.append(rect)
+    if res == []:
+        output.publish(image.display, 'bgr', 'heart')
+        return message()
+    print(res)
+    box_data = cv.boxPoints(res[0])
+    box = np.int64(box_data)
+    cv.drawContours(image.display, [box], 0, (0, 255, 0), 2)
     output.publish(image.display, 'bgr', 'heart')
+    print(box_data[1][0], box_data[1][1])
+    markpoints()
+    return message(state=1, box=box, area=box_data[1][0]*box_data[1][1],
+                   center=True)
 
 
 def find_hole(request):
@@ -222,20 +261,24 @@ def find_hole(request):
         if ratio < 7 or ratio > 9:
             continue
         print((rect[1][1]/rect[1][0])*5)
+        print('angle', rect[2])
         box1 = cv.boxPoints(rect)
         box1 = np.int64(box1)
         cv.drawContours(image.display, [box1], 0, (0, 0, 255), 2)
         res.append(rect)
     if res == []:
-        output.publish(image.display, 'bgr', 'heart')
+        output.publish(image.display, 'bgr', 'hole')
         return message()
     print(res)
     res = sorted(res, key=lambda x: x[0][0], reverse=request == 'right')
     box_data = cv.boxPoints(res[0])
     box = np.int64(box_data)
     cv.drawContours(image.display, [box], 0, (0, 255, 0), 2)
-    output.publish(image.display, 'bgr', 'heart')
-    return message(box=box, area=box_data[1][0]*box_data[1][1], center=True)
+    output.publish(image.display, 'bgr', 'hole')
+    print(box_data[1][0], box_data[1][1])
+    markpoints()
+    return message(state=1, box=box, area=box_data[1][0]*box_data[1][1],
+                   center=True)
 
 
 def nothing(x):

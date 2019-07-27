@@ -33,7 +33,7 @@ def marking():
 
 
 if __name__ == '__main__':
-    rospy.init_node('vision_stake', anonymous=False)
+    rospy.init_node('vision_markpics', anonymous=False)
     output.log("INIT NODE", AnsiCode.GREEN)
     rospy.Subscriber(image.topic('front'), CompressedImage, image.callback)
     output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
