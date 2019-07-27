@@ -266,7 +266,7 @@ def find_path():
 if __name__ == '__main__':
     rospy.init_node('vision_path', anonymous=False)
     output.log("INIT NODE", AnsiCode.GREEN)
-    rospy.Subscriber('/vision/bottom/image_raw/compressed', CompressedImage, image.callback)
+    rospy.Subscriber('/bottom/left/image_raw/compressed', CompressedImage, image.callback)
     output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
     rospy.Service('/vision/path',
                   VisionSrvPath(), mission_callback)
