@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <!-- REFERENCE WEBSITE IS http://wiki.ros.org/rosbag/Commandline -->
+    <!-- REFERENCE REGULAR EXPRESSION https://regexr.com/ -->
+
+    <node pkg="zeabus_vision" type="gate.py" name="vision_gate" output="screen" />
+    <node pkg="zeabus_vision" type="drop_garlic.py" name="vision_garlic" output="screen" />
+    <node pkg="zeabus_vision" type="path_dark.py" name="vision_dark" output="screen" />
+    <node pkg="zeabus_vision" type="stake_sift.py" name="vision_stake" output="screen" />
+    <node pkg="zeabus_vision" type="buoy.py" name="vision_buoy" output="screen" />
+    <node pkg="zeabus_vision" type="coffin.py" name="vision_coffin" output="screen" />
+</launch>
