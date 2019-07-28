@@ -184,9 +184,9 @@ class ImageTools:
             )
         else:
             sub_pos = np.clip(sub_sign.copy(),0,sub_sign.copy().max())
-            sub_pos = self.normalize(sub_pos)
-            _, result = cv.threshold(
-                sub_pos, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU
+            sub_pos = normalize(sub_pos)
+            _, obj_pos = cv.threshold(
+                result, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU
             )
 
         # time_duration = rospy.Time.now()-start_time

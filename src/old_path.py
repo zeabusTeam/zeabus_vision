@@ -49,15 +49,27 @@ def message(wimg,himg,cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, cx3=0.0, cy3=0.0, n_po
 
 
 def get_mask():
+    image.renew_display()
     # test = image.bg_subtraction(mode='pos',bg_blur_size=211,fg_blur_size=11)
     # pub.publish_result(test,'gray','/bg_sub')
-    image.to_hsv()
-    upper = np.array([238, 255, 255], dtype=np.uint8)
-    lower = np.array([50, 0, 0], dtype=np.uint8)
-    mask = cv.inRange(image.hsv, lower, upper)
-    mask = cv.medianBlur(mask,5)
-    mask = cv.bitwise_not(mask)
-    output.publish(mask,'gray','/mask')
+    max_iter = 5
+    # publish_result(obj_pos, "gray", "/path_obj_pos")
+    mask = image.bg_subtraction_kmean(image.display, bg_k=1, fg_k=3, mode='neg',max_iter=max_iter)
+    # return mask
+    # upper = np.array([238, 255, 255], dtype=np.uint8)
+    # lower = np.array([50, 0, 0], dtype=np.uint8)
+    # mask = cv.inRange(image.hsv, lower, upper)
+    # mask = cv.medianBlur(mask,5)
+    # mask = cv.bitwise_not(mask)
+    # test = image.bg_subtraction(mode='pos',bg_blur_size=211,fg_blur_size=11)
+    # pub.publish_result(test,'gray','/bg_sub')
+    #image.to_hsv()
+    #upper = np.array([238, 255, 255], dtype=np.uint8)
+    #lower = np.array([50, 0, 0], dtype=np.uint8)
+    #mask = cv.inRange(image.hsv, lower, upper)
+    #mask = cv.medianBlur(mask,5)
+    #mask = cv.bitwise_not(mask)
+    #output.publish(mask,'gray','/mask')
 
     # image.to_gray()
     # pub.publish_result(mask,'gray','/mask')
@@ -74,12 +86,12 @@ def get_mask():
 
     # pub.publish_result(image.gray,'gray','/path')
     # mask = cv.bitwise_and(mask,test)
-    # kernel = np.ones((5, 5), dtype=np.uint8)
+    kernel = np.ones((5, 5), dtype=np.uint8)
     # mask = cv.GaussianBlur(mask, (5, 5), 0)
-    # pub.publish_result(mask,'gray','/test')
-    # mask = cv.erode(mask, kernel)
+    #pub.publish_result(mask,'gray','/test')
+    mask = cv.erode(mask, kernel)
     # mask = cv.dilate(mask, kernel)
-    # pub.publish_result(mask,'gray','/path/ed')
+    output.publish(mask,'gray','/mask')
     return mask
 
 
@@ -103,10 +115,15 @@ def get_obj(mask):
     x,y,w,h = cv.boundingRect(cnt)
     if area < w*h/10:
         return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+    print (w*h)
+    print (wimg*himg)
+    if (w*h)/(wimg*himg) >= 2.0/3 :
+        return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     #if h < w*3/4 :
     	#return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     # cv.rectangle(mask,(x,y),(x+w,y+h),(255,255,255),2)
     y_bot_crop = y
+    x_right_crop = x
     for i in range (1,7) :
         y_top_crop = y_bot_crop
         y_bot_crop = y+(h*i/7)
@@ -126,6 +143,8 @@ def get_obj(mask):
             cy_crop = 0
         # cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
         # pub.publish_result(mask,'gray','/p')
+        area_crop = cv.contourArea(cnt_crop)
+        print ("area_crop = " + str(area_crop))
         cx.append(cx_crop)
         cy.append(cy_crop)
         # print ("cy[i] = " + str(cy[i]) )
