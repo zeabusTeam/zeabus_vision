@@ -8,6 +8,9 @@ from zeabus_utility.srv import VisionGate, VisionGateResponse
 from gate_lib import Gate
 from vision_lib import ImageTools
 
+from gate_buoy_debug_lib import gblog
+
+
 SUB_SAMPLING = 1
 PUBLIC_TOPIC = '/vision/mission/gate'
 CAMERA_TOPIC = ImageTools().topic('front')
@@ -80,6 +83,7 @@ def gate_callback(msg):
         res.x_left = 0.0
         res.x_right = 0.0
         res.area = 0.0
+    # gblog(res.__dict__)
     return res
 
 
