@@ -283,3 +283,30 @@ class Statistics:
             print("SKEWBESS:", skewness)
 
         return skewness
+
+
+class VampireDetector:
+    ''' make some constant don't repeat run'''
+
+    def __init__(self):
+        import os
+        self.VAMPIRE_NAME = 'pictures/full-0.3-thai.png'
+        self.MIN_MATCH_COUNT = 20
+        self.FLANN_INDEX_KDITREE = 0
+        self.sift = cv.xfeatures2d.SIFT_create()
+        self.file_dir = os.path.dirname(os.path.abspath(__file__))
+        self.vampire_dir = os.path.join(self.file_dir, self.VAMPIRE_NAME)
+        self.vampire_pic = cv.imread(self.vampire_dir)
+        self.flannParam = dict(algorithm=self.FLANN_INDEX_KDITREE, tree=5)
+        self.flann = cv.FlannBasedMatcher(self.flannParam, {})
+        self.train_keypoint, self.train_desc = self.compute(self.vampire_pic)
+
+    def compute(self, img):
+        result = self.sift.detectAndCompute(img, None)
+        return result
+
+    def get_train_border(self):
+        h, w = self.vampire_pic.shape[:2]
+        trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
+        return trainBorder
+
