@@ -131,8 +131,8 @@ class Buoy:
             s, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
         # mask = cv2.inRange(hsv, (0, 0, 0), (10, 30, 150))
         kernel = np.ones((10, 20), np.uint8)
-        thismask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-        # thismask = 255 - thismask
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        # mask = 255 - mask
         _, cts, hi = cv2.findContours(
             mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         cts = sorted(cts, key=cv2.contourArea, reverse=True)
