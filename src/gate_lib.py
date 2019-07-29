@@ -21,7 +21,7 @@ class Gate:
     # tileGridSize = 13
     # TH Param
     mode = 'hsv_v'
-    thresh = [20, 256]
+    thresh = [15, 256]
     tileGridSize = 1
     knClose = 20
 
@@ -83,7 +83,7 @@ class Gate:
             if key == ord('q'):
                 break
 
-    def doProcess(self, img, showImg=False):
+    def doProcess(self, img, showImg=False, img_seg=None):
         """Put image then get outputs
 
         Arguments:
@@ -96,7 +96,10 @@ class Gate:
             list -- Found data. None or list of cx1,cy1,cx2,cy2,area
         """
         img = cv2.resize(img, None, fx=0.50, fy=0.50)
-        processed = self._process(img)
+        if img_seg is not None:
+            processed = self._process_seg(img, img_seg)
+        else:
+            processed = self._process(img)
         if showImg:
             cv2.imshow(str(self.filename)+' ct', processed[1])
             # cv2.imshow(str(self.filename)+' 2', processed[2])
@@ -109,6 +112,56 @@ class Gate:
             if cond:
                 self.last_detect = processed[6]
         return (processed[6], processed[5], processed[4])
+
+    def _process_seg(self, img, img_seg):
+        def my_area(ct):
+            x, y, w, h = cv2.boundingRect(ct)
+            return w*h
+        img_seg_sm = cv2.resize(img_seg, (img.shape[1], img.shape[0]))
+
+        # lower = self.rospy.get_param(
+        #     "/object_detection/object_color_range/buoy/lower")
+        # upper = self.rospy.get_param(
+        #     "/object_detection/object_color_range/buoy/upper")
+        # lower = [int(lp) for lp in lower.split(',')]
+        # upper = [int(lp) for lp in upper.split(',')]
+        # lower = np.array(lower, np.uint8)
+        # upper = np.array(upper, np.uint8)
+        hsv = cv2.cvtColor(img_seg_sm, cv2.COLOR_BGR2HSV)
+        s = cv2.extractChannel(hsv, 1)
+        ret, mask = cv2.threshold(
+            s, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+        # mask = cv2.inRange(hsv, (0, 0, 0), (10, 30, 150))
+        kernel = np.ones((10, 10), np.uint8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        # mask = cv2.dilate(mask, kernel, iterations=1)
+        _, cts, hi = cv2.findContours(
+            mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        cts = sorted(cts, key=cv2.contourArea, reverse=True)
+        self.temp_img = img
+        filtered = self.FindGateFromGates(cts, s)
+        found = None
+        withct = img.copy()
+        for c in filtered:
+            x, y, w, h = cv2.boundingRect(c)
+            c_area = cv2.contourArea(c)
+            _found = ((2*x+w)/img.shape[1]-1, (2*y+h)/img.shape[0]-1,
+                      2*x/img.shape[1]-1, 2*(x+w)/img.shape[1]-1,
+                      c_area/w/h, (2*w)/img.shape[1])
+            diff = self.calcDiffPercent(_found, self.last_detect)
+            cond = self.last_detect is None or (diff[0] < 0.4)
+            cv2.rectangle(withct, (x, y), (x+w, y+h), (0, 256, 256), 2)
+            if cond:
+                found = _found
+                cv2.rectangle(withct, (x, y), (x+w, y+h), (256, 256, 0), 3)
+                cv2.circle(withct, (int(x+w/2), int(y+h/2)),
+                           4, (0, 256, 256), 4)
+                break
+        if found is None:
+            self.notfound += 1
+            if self.notfound > 30:
+                self.last_detect = None
+        return (img, img_seg, s, s, mask, withct, found)
 
     def _process(self, img):
         def my_area(ct):
