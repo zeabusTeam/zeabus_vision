@@ -11,7 +11,7 @@ class GateCheck:
         x, y, w, h = cv2.boundingRect(ct)
         ct_area = cv2.contourArea(ct)
         objAreaRatio = ct_area/float(w*h)
-        ratioCond1 = False and ((h*2 > 0.75*w) and (h < 1.25*w))
+        ratioCond1 = False or ((h*2 > 0.75*w) and (h < 1.25*w))
         ratioCond2 = ((h*2 > 0.75*w) and (h*2 < 1.25*w))
         heightCond = True
         sizeCond = True
@@ -23,6 +23,15 @@ class GateCheck:
         condLeg = self.condLeg(cropped)
         sumCond = objAreaRatio < 0.3 and (
             ratioCond1 or ratioCond2) and condLeg and sizeCond and heightCond
+        debug = {
+            'objAreaRatio': objAreaRatio,
+            'ratioCond1': ratioCond1,
+            'ratioCond2': ratioCond2,
+            'heightCond': heightCond,
+            'sizeCond': sizeCond,
+            'condLeg': condLeg,
+        }
+        # print(debug)
         if sumCond:
             return 1
         return 0
@@ -30,7 +39,9 @@ class GateCheck:
     def cropFour(self, img, ct):
         cropped = []
         x, y, w, h = cv2.boundingRect(ct)
-        y = int(y+h/6)
+        y = y+h-w/2
+        h = w/2
+        y = int(y+h/4)
         for i in range(4):
             cropped.append(img[int(y+h/4):int(y+h*3/4),
                                int(x+i*w/4):int(x+(i+1)*w/4)])
@@ -53,7 +64,14 @@ class GateCheck:
         # print(fourth.sum()/fourth.size, end='   ')
         second = cropped[1].copy()
         second = second/255
-        cond = cond and (second.sum()/second.size > 0)
+        secondCond = second.sum()/second.size > 0
         # cv2.imshow('second', cropped[1])
         # print(second.sum()/second.size)
+        third = cropped[2].copy()
+        third = third/255
+        thirdCond = third.sum()/second.size > 0
+        # cv2.imshow('third', cropped[1])
+        # print(third.sum()/third.size)
+        cond = cond and ((not thirdCond and secondCond) or (not secondCond and thirdCond))
+        cv2.waitKey(0)
         return cond
