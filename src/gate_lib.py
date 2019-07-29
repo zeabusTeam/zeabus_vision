@@ -192,7 +192,7 @@ class Gate:
         kernel = np.ones((self.knClose, self.knClose), np.uint8)
         closing = cv2.morphologyEx(bw_th3, cv2.MORPH_CLOSE, kernel)
         _, cts, hi = cv2.findContours(
-            closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+               closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         cts = sorted(cts, key=my_area, reverse=True)
         self.temp_img = img
         filtered = self.FindGateFromGates(cts, gray)
