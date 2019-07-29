@@ -11,13 +11,13 @@ from zeabus_utility.msg import VisionBox
 from zeabus_utility.srv import VisionSrvStake, VisionSrvStakeResponse
 from operator import itemgetter
 from constant import AnsiCode
-from vision_lib import OutputTools, ImageTools, TransformTools, VampireDetector
+from vision_lib import OutputTools, ImageTools, TransformTools, Detector
 
 
 image = ImageTools(sub_sampling=0.3)
 output = OutputTools(topic='/vision/stake/')
 transform = TransformTools()
-detector = VampireDetector()
+detector = Detector(picture_name='stake-full-0.3-thai.png')
 seq = 1
 
 
@@ -130,8 +130,8 @@ def find_vampire():
     himg, wimg = image.display.shape[:2]
 
     # print
-    cv.putText(image.display, 'vampire',
-               (2, 24), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
+    cv.putText(image.display, 'Vampire',
+               (3, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
                2, cv.LINE_AA)
 
     if(len(good_match) > detector.MIN_MATCH_COUNT):
@@ -151,7 +151,7 @@ def find_vampire():
         detect_point = str(len(good_match))+"/" + \
             str(len(detector.train_keypoint))
         cv.putText(image.display, detect_point,
-                   (2, himg-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
+                   (3, himg-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
                    2, cv.LINE_AA)
         output.log('FOUND', AnsiCode.GREEN)
         return message(state=1, box=box, area=-1, center=False)
@@ -160,7 +160,7 @@ def find_vampire():
         detect_point = str(len(good_match))+"/" + \
             str(len(detector.train_keypoint))
         cv.putText(image.display, detect_point,
-                   (2, himg-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
+                   (3, himg-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
                    2, cv.LINE_AA)
         output.log('NOT FOUND', AnsiCode.RED)
         return message()
