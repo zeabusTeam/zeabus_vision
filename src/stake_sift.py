@@ -11,39 +11,14 @@ from zeabus_utility.msg import VisionBox
 from zeabus_utility.srv import VisionSrvStake, VisionSrvStakeResponse
 from operator import itemgetter
 from constant import AnsiCode
-from vision_lib import OutputTools, ImageTools, TransformTools
+from vision_lib import OutputTools, ImageTools, TransformTools, Detector
+
 
 image = ImageTools(sub_sampling=0.3)
 output = OutputTools(topic='/vision/stake/')
 transform = TransformTools()
-detector = Detector()
+detector = Detector(picture_name='stake-full-0.3-thai.png')
 seq = 1
-
-
-class Detector:
-    ''' make some constant don't repeat run'''
-
-    ''' Constant '''
-    VAMPIRE_NAME = 'pictures/full-0.3-thai.png'
-    MIN_MATCH_COUNT = 20
-    FLANN_INDEX_KDITREE = 0
-
-    def __init__(self):
-        self.sift = cv.xfeatures2d.SIFT_create()
-        self.file_dir = os.path.dirname(os.path.abspath(__file__))
-        self.vampire_dir = os.path.join(self.file_dir, self.VAMPIRE_NAME, 0)
-        self.vampire_pic = cv.imread(self.vampire_dir)
-        self.flannParam = dict(algorithm=self.FLANN_INDEX_KDITREE, tree=5)
-        self.flann = cv.FlannBasedMatcher(self.flannParam, {})
-        self.train_keypoint, self.train_desc = self.compute(self.vampire_pic)
-
-    def compute(self, img):
-        result = self.sift.detectAndCompute(img, None)
-        return result
-
-    def get_train_border(self):
-        h, w = self.vampire_pic.shape[:2]
-        trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
 
 
 def mission_callback(msg):
@@ -91,10 +66,7 @@ def to_box(state=0, box=0, color=(0, 255, 0), area=0.0, center=True):
         msg.area = q_area(box)/(shape[0]*shape[1])
     elif area > 0:
         msg.area = area/(shape[0]*shape[1])
-    for i in range(1, 5):
-        print('pt'+str(i), tuple(eval('pt'+str(i))))
-        cv.putText(image.display, str(i), tuple(eval('pt'+str(i))),
-                   cv.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv.LINE_AA)
+
     if center:
         cx = cy = 0
         for pt in box:
@@ -108,6 +80,10 @@ def to_box(state=0, box=0, color=(0, 255, 0), area=0.0, center=True):
         msg.point_1 = transform.convert_to_point((cx, cy), shape)
         print('msg', msg)
     else:
+        for i in range(1, 5):
+            print('pt'+str(i), tuple(eval('pt'+str(i))))
+            cv.putText(image.display, str(i), tuple(eval('pt'+str(i))),
+                       cv.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv.LINE_AA)
         msg.point_1 = transform.convert_to_point(pt1, shape)
         msg.point_2 = transform.convert_to_point(pt2, shape)
         msg.point_3 = transform.convert_to_point(pt3, shape)
@@ -138,14 +114,14 @@ def markpoints():
     cv.line(image.display, (145, 188), (145, 218), (0, 0, 255), 1)
 
 
-def find_vampire(c=0):
+def find_vampire():
     if image.bgr is None:
         output.img_is_none()
         return message(state=-1)
     image.renew_display()
 
     query_keypoint, query_desc = detector.compute(image.display)
-    matches = flann.knnMatch(query_desc, detector.train_desc, k=2)
+    matches = detector.flann.knnMatch(query_desc, detector.train_desc, k=2)
 
     good_match = []
     for m, n in matches:
@@ -154,15 +130,15 @@ def find_vampire(c=0):
     himg, wimg = image.display.shape[:2]
 
     # print
-    cv.putText(image.display, 'vampire',
-               (0, 10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
+    cv.putText(image.display, 'Vampire',
+               (3, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
                2, cv.LINE_AA)
 
-    if(len(good_match) > MIN_MATCH_COUNT):
+    if(len(good_match) > detector.MIN_MATCH_COUNT):
         tp = []
         qp = []
         for m in good_match:
-            tp.append(train_kp[m.trainIdx].pt)
+            tp.append(detector.train_keypoint[m.trainIdx].pt)
             qp.append(query_keypoint[m.queryIdx].pt)
         tp, qp = np.float32((tp, qp))
         H, status = cv.findHomography(tp, qp, cv.RANSAC, 3.0)
@@ -172,15 +148,19 @@ def find_vampire(c=0):
         box = np.int64(query_border[0])
 
         # print #/89 in display
-        cv.putText(image.display, str(len(good_match))+"/"+str(len(train_kp)),
-                   (0, himg-5), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
+        detect_point = str(len(good_match))+"/" + \
+            str(len(detector.train_keypoint))
+        cv.putText(image.display, detect_point,
+                   (3, himg-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
                    2, cv.LINE_AA)
         output.log('FOUND', AnsiCode.GREEN)
         return message(state=1, box=box, area=-1, center=False)
     else:
         # print #/89 in display
-        cv.putText(image.display, str(len(good_match))+"/"+str(len(train_kp)),
-                   (0, himg-5), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
+        detect_point = str(len(good_match))+"/" + \
+            str(len(detector.train_keypoint))
+        cv.putText(image.display, detect_point,
+                   (3, himg-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
                    2, cv.LINE_AA)
         output.log('NOT FOUND', AnsiCode.RED)
         return message()
@@ -215,30 +195,30 @@ def find_heart():
     vertical = cv.erode(mask.copy(), kernel_vertical)
     contours = cv.findContours(
         mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+    cv.putText(image.display, 'heart',
+               (2, 24), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
+               2, cv.LINE_AA)
     res = []
     for cnt in contours:
         if cv.contourArea(cnt) < 500:
             continue
-        rect = cv.minAreaRect(cnt)
-        # ratio = (rect[1][1]/rect[1][0])*5
-        # print((rect[1][1]/rect[1][0])*5)
-        print('angle', rect[2])
-        box1 = cv.boxPoints(rect)
-        box1 = np.int64(box1)
-        cv.drawContours(image.display, [box1], 0, (0, 0, 255), 2)
+        rect = ((x, y), (w, h), angle) = cv.minAreaRect(cnt)
+        print('angle', angle)
+        if angle > -22.5 or angle < -67.5:
+            continue
+        box = cv.boxPoints(rect)
+        box = np.int64(box)
+        cv.drawContours(image.display, [box], 0, (0, 0, 255), 2)
         res.append(rect)
     if res == []:
-        output.publish(image.display, 'bgr', 'heart')
         return message()
-    print(res)
+    res = sorted(res, key=lambda x: x[1][0]*x[1][1], reverse=True)
     box_data = cv.boxPoints(res[0])
     box = np.int64(box_data)
     cv.drawContours(image.display, [box], 0, (0, 255, 0), 2)
-    output.publish(image.display, 'bgr', 'heart')
     print(box_data[1][0], box_data[1][1])
-    markpoints()
-    return message(state=1, box=box, area=box_data[1][0]*box_data[1][1],
-                   center=True)
+    area = box_data[1][0]*box_data[1][1]
+    return message(state=1, box=box, area=area, center=True)
 
 
 def find_hole(request):
@@ -252,37 +232,44 @@ def find_hole(request):
     vertical = cv.erode(mask.copy(), kernel_vertical)
     contours = cv.findContours(
         mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1]
+    cv.putText(image.display, request,
+               (2, 24), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255),
+               2, cv.LINE_AA)
     res = []
     for cnt in contours:
         if cv.contourArea(cnt) < 500:
             continue
-        rect = cv.minAreaRect(cnt)
-        ratio = (rect[1][1]/rect[1][0])*5
-        if ratio < 7 or ratio > 9:
+
+        x, y, w, h = cv.boundingRect(cnt)
+        if w > h:
             continue
-        print((rect[1][1]/rect[1][0])*5)
-        print('angle', rect[2])
-        box1 = cv.boxPoints(rect)
-        box1 = np.int64(box1)
-        cv.drawContours(image.display, [box1], 0, (0, 0, 255), 2)
+        ratio = (1.0*h/w)*5
+        print('ratio', ratio)
+
+        if ratio < 6.5 or ratio > 9.5:
+            continue
+        print('ratio')
+        rect = ((x, y), (w, h), angle) = cv.minAreaRect(cnt)
+        if angle < -22.5 and angle > -67.5:
+            continue
+
+        print('angle')
+
+        print('wh')
+        box = cv.boxPoints(rect)
+        box = np.int64(box)
+        cv.drawContours(image.display, [box], 0, (0, 0, 255), 2)
         res.append(rect)
     if res == []:
-        output.publish(image.display, 'bgr', 'hole')
         return message()
     print(res)
-    res = sorted(res, key=lambda x: x[0][0], reverse=request == 'right')
+    res = sorted(res, key=lambda x: x[0][0], reverse=(request == 'right'))
     box_data = cv.boxPoints(res[0])
     box = np.int64(box_data)
     cv.drawContours(image.display, [box], 0, (0, 255, 0), 2)
-    output.publish(image.display, 'bgr', 'hole')
     print(box_data[1][0], box_data[1][1])
-    markpoints()
-    return message(state=1, box=box, area=box_data[1][0]*box_data[1][1],
-                   center=True)
-
-
-def nothing(x):
-    pass
+    area = box_data[1][0]*box_data[1][1]
+    return message(state=1, box=box, area=area, center=True)
 
 
 if __name__ == '__main__':
@@ -290,9 +277,6 @@ if __name__ == '__main__':
     output.log("INIT NODE", AnsiCode.GREEN)
     rospy.Subscriber(image.topic('front'), CompressedImage, image.callback)
     output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
-    # while not rospy.is_shutdown():
-    #     find_hole('right')
-    #     print(1)
     rospy.Service('vision/stake',
                   VisionSrvStake(), mission_callback)
     output.log("INIT SERVICE", AnsiCode.GREEN)
