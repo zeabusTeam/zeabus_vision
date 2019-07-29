@@ -83,7 +83,15 @@ def gate_callback(msg):
         res.x_left = 0.0
         res.x_right = 0.0
         res.area = 0.0
-    # gblog(res.__dict__)
+    printable = {
+        'found': res.found,
+        'cx1': res.cx1,
+        'cy1': res.cy1,
+        'x_left': res.x_left,
+        'x_right': res.x_right,
+        'area': res.area,
+    }
+    gblog(printable)
     return res
 
 
