@@ -16,7 +16,7 @@
     <arg name="auto_white_balance" value="False" />
     <arg name="ext_trigger_mode" value="False" />
     <arg name="auto_frame_rate" value="False" />
-    <arg name="frame_rate" value="15.0" />
+    <arg name="frame_rate" value="10.0" />
     <arg name="pixel_clock" value="30" />
     <arg name="flip_lr" value="False" />
 
