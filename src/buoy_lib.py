@@ -59,7 +59,7 @@ class Buoy:
         # Load Ref img
         filedir = os.path.dirname(os.path.abspath(__file__))
         self.jiangshi = cv2.imread(os.path.join(
-            filedir, 'pictures', 'jiangshi.png'), 0)
+            filedir, 'pictures', 'jiangshi.jpg'), 0)
         # self.jiangshi = cv2.resize(self.jiangshi, None, fx=0.1, fy=0.1)
         # self.jiangshi = cv2.medianBlur(self.jiangshi, 7)
         self.sift = cv2.xfeatures2d.SIFT_create()
