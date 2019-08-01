@@ -80,15 +80,17 @@ class AutoExposure:
         self.stat = Statistics()
 
         self.wait_time = time()
+        self.ros_auto = False
 
     def change_and_wait(self, wait_time=5):
-        params = {"auto_exposure": True}
+        params = {"auto_exposure": bool(True)}
         self.client.update_configuration(params)
         self.wait_time = time() + wait_time
         self.ros_auto = True
+        rospy.sleep(0.2)
 
     def get_change_back(self):
-        params = {"auto_exposure": False}
+        params = {"auto_exposure": bool(False)}
         self.client.update_configuration(params)
         self.ros_auto = False
 
@@ -183,10 +185,14 @@ class AutoExposure:
             print(th_p_lower, th_p_upper, ev)
             print(current_p_lower, current_p_upper, ev)
 
-            if current_p_lower < th_p_lower:
-                self.set_param(ev + 0.04)
-            if current_p_upper > th_p_upper:
-                self.set_param(ev - 0.04)
+            try:
+                if not self.ros_auto:
+                    if current_p_lower < th_p_lower:
+                        self.set_param(ev + 0.04)
+                    if current_p_upper > th_p_upper:
+                        self.set_param(ev - 0.04)
+            except:
+                print('cannot set param')
 
             self.log.append(current_ev-previous_ev)
 
