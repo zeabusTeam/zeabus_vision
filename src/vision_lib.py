@@ -288,10 +288,10 @@ class Statistics:
 class Detector:
     ''' make some constant don't repeat run'''
 
-    def __init__(self, picture_name):
+    def __init__(self, picture_name, min_match=20):
         import os
         self.PICTURE_NAME = 'pictures/' + picture_name
-        self.MIN_MATCH_COUNT = 20
+        self.MIN_MATCH_COUNT = min_match
         self.FLANN_INDEX_KDITREE = 0
         self.sift = cv.xfeatures2d.SIFT_create()
         self.file_dir = os.path.dirname(os.path.abspath(__file__))

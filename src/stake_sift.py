@@ -17,7 +17,7 @@ from vision_lib import OutputTools, ImageTools, TransformTools, Detector
 image = ImageTools(sub_sampling=0.3)
 output = OutputTools(topic='/vision/stake/')
 transform = TransformTools()
-detector = Detector(picture_name='stake-full-0.3-thai.png')
+detector = Detector(picture_name='stake-full-0.3-usa.png', min_match=25)
 seq = 1
 
 
@@ -125,7 +125,7 @@ def find_vampire():
 
     good_match = []
     for m, n in matches:
-        if(m.distance < 0.75*n.distance):
+        if(m.distance < 0.80*n.distance):
             good_match.append(m)
     himg, wimg = image.display.shape[:2]
 
@@ -168,8 +168,10 @@ def find_vampire():
 
 def get_mask():
     image.to_hsv()
-    upper = np.array([72, 255, 255], dtype=np.uint8)
-    lower = np.array([28, 0, 0], dtype=np.uint8)
+    # upper = np.array([72, 255, 255], dtype=np.uint8)
+    # lower = np.array([28, 0, 0], dtype=np.uint8)
+    upper = np.array([57, 255, 243], dtype=np.uint8)
+    lower = np.array([19, 87, 0], dtype=np.uint8)
     mask = cv.inRange(image.hsv, lower, upper)
     return mask
 
@@ -240,25 +242,34 @@ def find_hole(request):
         if cv.contourArea(cnt) < 500:
             continue
 
-        x, y, w, h = cv.boundingRect(cnt)
-        if w > h:
-            continue
-        ratio = (1.0*h/w)*5
-        print('ratio', ratio)
-
-        if ratio < 6.5 or ratio > 9.5:
-            continue
-        print('ratio')
         rect = ((x, y), (w, h), angle) = cv.minAreaRect(cnt)
+
         if angle < -22.5 and angle > -67.5:
             continue
 
-        print('angle')
+        x, y, w, h = cv.boundingRect(cnt)
+        roi = mask[y:y + h, x:x + w]
+        if w > h:
+            continue
+
+        ratio = (1.0*h/w)*5
+        if ratio < 6.5 or ratio > 9.5:
+            continue
+        print('ratio', ratio)
+
+        box = cv.boxPoints(rect)
+        box = np.int64(box)
+        cv.drawContours(image.display, [box], 0, (0, 0, 255), 2)
+
+        print('area_ratio', (1.0*w*h)/cv.countNonZero(roi),
+              x, y, w, h, cv.countNonZero(roi))
+        if ((1.0*w*h)/cv.countNonZero(roi) < 2.7):
+            continue
 
         print('wh')
         box = cv.boxPoints(rect)
         box = np.int64(box)
-        cv.drawContours(image.display, [box], 0, (0, 0, 255), 2)
+        cv.drawContours(image.display, [box], 0, (0, 255, 255), 2)
         res.append(rect)
     if res == []:
         return message()
