@@ -148,57 +148,59 @@ class AutoExposure:
             if self.ros_auto:
                 self.get_change_back()
 
-            pre_process_bgr = self.pre_processing(self.image)
-            gray = cv.cvtColor(pre_process_bgr, cv.COLOR_BGR2GRAY)
-
-            current_ev = self.get_exposure()
-
-            if current_ev is None:
-                ev = previous_ev
-            else:
-                ev = current_ev
-
-            if self.debug:
-                p_lower = cv.getTrackbarPos('p_lower', 'image')
-                p_upper = cv.getTrackbarPos('p_upper', 'image')
-
-                th_p_lower = cv.getTrackbarPos('th_p_lower', 'image')
-                th_p_upper = cv.getTrackbarPos('th_p_upper', 'image')
-
-                cv.imshow('gray', gray)
-                cv.imshow('image', self.image)
-                cv.imshow('pre_process_bgr', pre_process_bgr)
-
-                k = cv.waitKey(1) & 0xff
-                if k == ord('q'):
-                    break
-                histr = cv.calcHist([gray], [0], None, [256], [0, 256])
-                plt.plot(histr, color='blue')
-
-                plt.pause(0.00001)
-                plt.clf()
-
-            current_p_lower = self.stat.get_percentile(gray, p_lower)
-            current_p_upper = self.stat.get_percentile(gray, p_upper)
-
-            print('==' * 20)
-            print(th_p_lower, th_p_upper, ev)
-            print(current_p_lower, current_p_upper, ev)
-
             try:
-                if not self.ros_auto:
-                    if current_p_lower < th_p_lower:
-                        self.set_param(ev + 0.04)
-                    if current_p_upper > th_p_upper:
-                        self.set_param(ev - 0.04)
+                pre_process_bgr = self.pre_processing(self.image)
+                gray = cv.cvtColor(pre_process_bgr, cv.COLOR_BGR2GRAY)
+
+                current_ev = self.get_exposure()
+
+                if current_ev is None:
+                    ev = previous_ev
+                else:
+                    ev = current_ev
+
+                if self.debug:
+                    p_lower = cv.getTrackbarPos('p_lower', 'image')
+                    p_upper = cv.getTrackbarPos('p_upper', 'image')
+
+                    th_p_lower = cv.getTrackbarPos('th_p_lower', 'image')
+                    th_p_upper = cv.getTrackbarPos('th_p_upper', 'image')
+
+                    cv.imshow('gray', gray)
+                    cv.imshow('image', self.image)
+                    cv.imshow('pre_process_bgr', pre_process_bgr)
+
+                    k = cv.waitKey(1) & 0xff
+                    if k == ord('q'):
+                        break
+                    histr = cv.calcHist([gray], [0], None, [256], [0, 256])
+                    plt.plot(histr, color='blue')
+
+                    plt.pause(0.00001)
+                    plt.clf()
+
+                current_p_lower = self.stat.get_percentile(gray, p_lower)
+                current_p_upper = self.stat.get_percentile(gray, p_upper)
+
+                print('==' * 20)
+                print(th_p_lower, th_p_upper, ev)
+                print(current_p_lower, current_p_upper, ev)
+
+                try:
+                    if not self.ros_auto:
+                        if current_p_lower < th_p_lower:
+                            self.set_param(ev + 0.04)
+                        if current_p_upper > th_p_upper:
+                            self.set_param(ev - 0.04)
+                except:
+                    print('cannot set param')
+
+                self.log.append(current_ev-previous_ev)
+
+                previous_ev = current_ev
+                self.log.sleep(10)
             except:
-                print('cannot set param')
-
-            self.log.append(current_ev-previous_ev)
-
-            previous_ev = current_ev
-            self.log.sleep(10)
-
+                print('what that bug')
         if self.debug:
             plt.close()
             cv.destroyAllWindows()
