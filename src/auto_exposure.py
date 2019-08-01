@@ -11,11 +11,12 @@ import os
 import rospy
 import cv2 as cv
 import numpy as np
-from time import sleep
+from time import sleep, time
 import matplotlib.pyplot as plt
 from vision_lib import Statistics
 from sensor_msgs.msg import CompressedImage
 from dynamic_reconfigure.client import Client as Client
+from zeabus_utility.srv import VisionSrvAE
 
 
 class Log:
@@ -78,6 +79,19 @@ class AutoExposure:
         self.sub_sampling = 0.25
         self.stat = Statistics()
 
+        self.wait_time = time()
+
+    def change_and_wait(self, wait_time=5):
+        params = {"auto_exposure": True}
+        self.client.update_configuration(params)
+        self.wait_time = time() + wait_time
+        self.ros_auto = True
+
+    def get_change_back(self):
+        params = {"auto_exposure": False}
+        self.client.update_configuration(params)
+        self.ros_auto = False
+
     def image_callback(self, msg):
         arr = np.fromstring(msg.data, np.uint8)
         self.image = cv.resize(cv.imdecode(arr, 1), (0, 0),
@@ -124,6 +138,14 @@ class AutoExposure:
         while not rospy.is_shutdown():
             if self.image is None:
                 continue
+
+            if self.wait_time > time():
+                rospy.sleep(0.1)
+                continue
+
+            if self.ros_auto:
+                self.get_change_back()
+
             pre_process_bgr = self.pre_processing(self.image)
             gray = cv.cvtColor(pre_process_bgr, cv.COLOR_BGR2GRAY)
 
