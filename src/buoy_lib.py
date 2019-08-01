@@ -149,6 +149,8 @@ class Buoy:
             x, y, w, h = cv2.boundingRect(ct)
             obj = out[y:y+h, x:x+w]
             gray_crop = cv2.cvtColor(obj, cv2.COLOR_BGR2GRAY)
+            gray_crop = gray_crop[int(
+                gray_crop.shape[0]*0.3):int(gray_crop.shape[0]*0.558)]
             _, th = cv2.threshold(
                 gray_crop, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
             circles = cv2.HoughCircles(
@@ -250,6 +252,8 @@ class Buoy:
                     return result
 
         gray_crop = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+        gray_crop = gray_crop[int(
+            gray_crop.shape[0]*0.3):int(gray_crop.shape[0]*0.558)]
         _, th = cv2.threshold(
             gray_crop, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         circles = cv2.HoughCircles(
