@@ -21,7 +21,7 @@ class GateCheck:
         heightCond = True
         sizeCond = True
         if img is not None:
-            # heightCond = y/img.shape[0] < 0.7
+            heightCond = y/img.shape[0] < 0.7
             sizeCond = (float(w*h)/img.shape[0]/img.shape[1]) > 0.008 and (
                 float(w*h)/img.shape[0]/img.shape[1]) < 0.50
         condLeg = True
