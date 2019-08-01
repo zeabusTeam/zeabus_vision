@@ -11,12 +11,11 @@ import os
 import rospy
 import cv2 as cv
 import numpy as np
-from time import sleep, time
+from time import sleep
 import matplotlib.pyplot as plt
 from vision_lib import Statistics
 from sensor_msgs.msg import CompressedImage
 from dynamic_reconfigure.client import Client as Client
-from zeabus_utility.srv import VisionSrvAE
 
 
 class Log:
@@ -79,21 +78,6 @@ class AutoExposure:
         self.sub_sampling = 0.25
         self.stat = Statistics()
 
-        self.wait_time = time()
-        self.ros_auto = False
-
-    def change_and_wait(self, wait_time=5):
-        params = {"auto_exposure": bool(True)}
-        self.client.update_configuration(params)
-        self.wait_time = time() + wait_time
-        self.ros_auto = True
-        rospy.sleep(0.2)
-
-    def get_change_back(self):
-        params = {"auto_exposure": bool(False)}
-        self.client.update_configuration(params)
-        self.ros_auto = False
-
     def image_callback(self, msg):
         arr = np.fromstring(msg.data, np.uint8)
         self.image = cv.resize(cv.imdecode(arr, 1), (0, 0),
@@ -140,67 +124,53 @@ class AutoExposure:
         while not rospy.is_shutdown():
             if self.image is None:
                 continue
+            pre_process_bgr = self.pre_processing(self.image)
+            gray = cv.cvtColor(pre_process_bgr, cv.COLOR_BGR2GRAY)
 
-            if self.wait_time > time():
-                rospy.sleep(0.1)
-                continue
+            current_ev = self.get_exposure()
 
-            if self.ros_auto:
-                self.get_change_back()
+            if current_ev is None:
+                ev = previous_ev
+            else:
+                ev = current_ev
 
-            try:
-                pre_process_bgr = self.pre_processing(self.image)
-                gray = cv.cvtColor(pre_process_bgr, cv.COLOR_BGR2GRAY)
+            if self.debug:
+                p_lower = cv.getTrackbarPos('p_lower', 'image')
+                p_upper = cv.getTrackbarPos('p_upper', 'image')
 
-                current_ev = self.get_exposure()
+                th_p_lower = cv.getTrackbarPos('th_p_lower', 'image')
+                th_p_upper = cv.getTrackbarPos('th_p_upper', 'image')
 
-                if current_ev is None:
-                    ev = previous_ev
-                else:
-                    ev = current_ev
+                cv.imshow('gray', gray)
+                cv.imshow('image', self.image)
+                cv.imshow('pre_process_bgr', pre_process_bgr)
 
-                if self.debug:
-                    p_lower = cv.getTrackbarPos('p_lower', 'image')
-                    p_upper = cv.getTrackbarPos('p_upper', 'image')
+                k = cv.waitKey(1) & 0xff
+                if k == ord('q'):
+                    break
+                histr = cv.calcHist([gray], [0], None, [256], [0, 256])
+                plt.plot(histr, color='blue')
 
-                    th_p_lower = cv.getTrackbarPos('th_p_lower', 'image')
-                    th_p_upper = cv.getTrackbarPos('th_p_upper', 'image')
+                plt.pause(0.00001)
+                plt.clf()
 
-                    cv.imshow('gray', gray)
-                    cv.imshow('image', self.image)
-                    cv.imshow('pre_process_bgr', pre_process_bgr)
+            current_p_lower = self.stat.get_percentile(gray, p_lower)
+            current_p_upper = self.stat.get_percentile(gray, p_upper)
 
-                    k = cv.waitKey(1) & 0xff
-                    if k == ord('q'):
-                        break
-                    histr = cv.calcHist([gray], [0], None, [256], [0, 256])
-                    plt.plot(histr, color='blue')
+            print('==' * 20)
+            print(th_p_lower, th_p_upper, ev)
+            print(current_p_lower, current_p_upper, ev)
 
-                    plt.pause(0.00001)
-                    plt.clf()
+            if current_p_lower < th_p_lower:
+                self.set_param(ev + 0.04)
+            if current_p_upper > th_p_upper:
+                self.set_param(ev - 0.04)
 
-                current_p_lower = self.stat.get_percentile(gray, p_lower)
-                current_p_upper = self.stat.get_percentile(gray, p_upper)
+            self.log.append(current_ev-previous_ev)
 
-                print('==' * 20)
-                print(th_p_lower, th_p_upper, ev)
-                print(current_p_lower, current_p_upper, ev)
+            previous_ev = current_ev
+            self.log.sleep(10)
 
-                try:
-                    if not self.ros_auto:
-                        if current_p_lower < th_p_lower:
-                            self.set_param(ev + 0.04)
-                        if current_p_upper > th_p_upper:
-                            self.set_param(ev - 0.04)
-                except:
-                    print('cannot set param')
-
-                self.log.append(current_ev-previous_ev)
-
-                previous_ev = current_ev
-                self.log.sleep(10)
-            except:
-                print('what that bug')
         if self.debug:
             plt.close()
             cv.destroyAllWindows()

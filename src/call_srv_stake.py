@@ -13,7 +13,7 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         try:
             print('calling')
-            res = call(String('stake'), String('vampire'))
+            res = call(String('stake'), String('left'))
             print(res)
         except:
             pass

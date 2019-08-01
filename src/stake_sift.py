@@ -7,14 +7,14 @@ from time import time
 from std_msgs.msg import Int64, Float64, Header, String
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Point
-from zeabus_utility.msg import VisionStake
-from zeabus_utility.srv import VisionSrvStake
+from zeabus_utility.msg import VisionBox
+from zeabus_utility.srv import VisionSrvStake, VisionSrvStakeResponse
 from operator import itemgetter
 from constant import AnsiCode
 from vision_lib import OutputTools, ImageTools, TransformTools, Detector
 
 
-image = ImageTools(sub_sampling=0.5)
+image = ImageTools(sub_sampling=0.3)
 output = OutputTools(topic='/vision/stake/')
 transform = TransformTools()
 detector = Detector(picture_name='stake-full-0.3-usa.png', min_match=25)
@@ -27,9 +27,6 @@ def mission_callback(msg):
         Returns:
             a group of process value from this program
     """
-    if image.bgr is None:
-        output.img_is_none()
-        return message(state=-1)
     task = str(msg.task.data)
     request = str(msg.request.data)
     print('task', task, 'req', request)
@@ -41,6 +38,14 @@ def mission_callback(msg):
         return find_hole(request)
 
 
+def q_area(box, n=4):
+    area = 0.0
+    j = n-1
+    for i in range(0, n):
+        area += (box[j][0] + box[i][0]) * (box[j][1] - box[i][1])
+        j = i
+    print(area)
+    return abs(area / 2.0)
 
 
 def to_box(state=0, box=0, color=(0, 255, 0), area=0.0, center=True):
