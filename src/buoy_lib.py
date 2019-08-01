@@ -56,6 +56,8 @@ class Buoy:
         # Load ML Lib
         # self.ML = BuoyML()
 
+        self.clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(20, 20))
+
         # Load Ref img
         filedir = os.path.dirname(os.path.abspath(__file__))
         self.jiangshi = cv2.imread(os.path.join(
@@ -70,8 +72,8 @@ class Buoy:
         FLANN_INDEX_KDTREE = 0
         index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=8)
         search_params = dict(checks=50)
-        self.flann = cv2.FlannBasedMatcher(index_params, search_params)
-        # self.flann = cv2.BFMatcher()
+        # self.flann = cv2.FlannBasedMatcher(index_params, search_params)
+        self.flann = cv2.BFMatcher()
 
     def openSource(self, sourceType, source=0):
         if sourceType == self.SOURCE_TYPE['FILE']:
@@ -114,6 +116,7 @@ class Buoy:
         # self.img_sm = cv2.cvtColor(img_lab, cv2.COLOR_LAB2BGR)
         self.img_sm = cv2.GaussianBlur(self.img_sm, (3, 3), 256)
         self.img_gray = cv2.cvtColor(self.img_sm, cv2.COLOR_BGR2GRAY)
+        self.img_gray = self.clahe.apply(self.img_gray)
 
     def process_seg(self):
         result = BuoyReturn()
