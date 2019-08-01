@@ -50,6 +50,7 @@ def q_area(box, n=4):
 
 def to_box(state=0, box=0, color=(0, 255, 0), area=0.0, center=True):
     shape = image.display.shape[:2]
+    print('shape',shape)
     sort = sorted(box, key=lambda x: x[0])
     bottom = sort[:2]
     bottom = sorted(bottom, key=lambda x: x[1])
@@ -218,6 +219,7 @@ def find_heart():
     box_data = cv.boxPoints(res[0])
     box = np.int64(box_data)
     cv.drawContours(image.display, [box], 0, (0, 255, 0), 2)
+
     print(box_data[1][0], box_data[1][1])
     area = box_data[1][0]*box_data[1][1]
     return message(state=1, box=box, area=area, center=True)
@@ -275,11 +277,14 @@ def find_hole(request):
         return message()
     print(res)
     res = sorted(res, key=lambda x: x[0][0], reverse=(request == 'right'))
-    box_data = cv.boxPoints(res[0])
+    big_box = res[0]
+    box_data = cv.boxPoints(big_box)
     box = np.int64(box_data)
     cv.drawContours(image.display, [box], 0, (0, 255, 0), 2)
-    print(box_data[1][0], box_data[1][1])
-    area = box_data[1][0]*box_data[1][1]
+    print('shape',image.display.shape)
+    print('bdt',big_box)
+    print('data',big_box[1][0], big_box[1][1])
+    area = big_box[1][0]*big_box[1][1]
     return message(state=1, box=box, area=area, center=True)
 
 
