@@ -60,7 +60,7 @@ def get_mask():
     max_iter = 5
     # publish_result(obj_pos, "gray", "/path_obj_pos")
     mask = image.bg_subtraction_kmean(
-        image.display, bg_k=1, fg_k=3, mode='neg', max_iter=max_iter)
+        image.display, bg_k=1, fg_k=5, mode='neg', max_iter=max_iter)
     # return mask
     upper = np.array([54, 125, 105], dtype=np.uint8)
     lower = np.array([26, 36, 14], dtype=np.uint8)
@@ -139,12 +139,15 @@ def get_obj(mask):
         print "h = " + str(h)
         print "w = " + str(w)
         minarea = 1500
-        maxarea = wimg*himg/10
-        ratio_area = w*h/10
+        maxarea = 35000
+        ratio_area = w*h/12
         # print "maxarea = " + str(w*h/10)
         print "area = " + str(area)
+        if w > 350 and h < 50 :
+            print "too long h"
+            continue
         if w >= h*10:
-            print "too long"
+            print "too long w"
             continue
         if minarea >= area or area >= maxarea or area <= ratio_area:
             print "area return"
@@ -233,43 +236,10 @@ def get_obj(mask):
             # pub.publish_result(mask,'gray','/p')
             old_area_crop = area_crop
             area_crop = cv.contourArea(cnt_crop)
-            if i > 1 :
-                if area_crop - old_area_crop > 700:
-                    print "diff area return"
-                    break
-                if turn_point == 0 :
-                    if mode == 0 :
-                        if cy_crop-old_cy > 0 :
-                            is_plus =  True
-                        else :
-                            is_plus = False
-                        if i == 2 :
-                            old_is_plus = is_plus
-                        if is_plus != old_is_plus :
-                            print "wrong orientation"
-                            break 
-                    else :
-                        if cx_crop-old_cx > 0 :
-                            is_plus =  True
-                        else :
-                            is_plus = False
-                        if i == 2 :
-                            old_is_plus = is_plus
-                        if is_plus != old_is_plus :
-                            print "wrong orientation"
-                            break 
-                else :
-                    if mode == 0 :
-                        if is_plus == True and cy_crop-old_cy > 0 :
-                            print "turn wrong"
-                            is_break = True
-                            break
-                    else :
-                        if is_plus == True and cx_crop-old_cx > 0 :
-                            print "turn wrong"
-                            is_break = True
-                            break
-                old_is_plus = is_plus
+            if i > 1 and area_crop - old_area_crop > 700:
+                is_break = True
+                print "diff area return"
+                break
                     # print ("area_crop = " + str(area_crop))
             old_cy = cy_crop
             old_cx = cx_crop
@@ -291,6 +261,44 @@ def get_obj(mask):
                     # turn_point = i-1
                     turn_point = len(cy)-1
                 old_ang = ang_crop
+            if i > 1 :
+                if turn_point == 0 :
+                    if mode == 0 :
+                        if cy_crop-old_cy > 0 :
+                            is_plus =  True
+                        else :
+                            is_plus = False
+                        if i == 2 :
+                            old_is_plus = is_plus
+                        print is_plus
+                        if is_plus != old_is_plus :
+                            is_break = True
+                            print "wrong orientation n = 2"
+                            break 
+                    else :
+                        if cx_crop-old_cx > 0 :
+                            is_plus =  True
+                        else :
+                            is_plus = False
+                        if i == 2 :
+                            old_is_plus = is_plus
+                        print is_plus
+                        if is_plus != old_is_plus :
+                            is_break = True 
+                            print "wrong orientation n = 3"
+                            break 
+                else :
+                    if mode == 0 :
+                        if is_plus == True and cy_crop-old_cy > 0 :
+                            print "turn wrong"
+                            is_break = True
+                            break
+                    else :
+                        if is_plus == True and cx_crop-old_cx > 0 :
+                            print "turn wrong"
+                            is_break = True
+                            break
+                old_is_plus = is_plus
         print turn_point
         if is_break :
             continue

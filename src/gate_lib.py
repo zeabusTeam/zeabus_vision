@@ -16,13 +16,13 @@ class Gate:
     useml = False
     useif = True
     # USA Param
-    # mode = 'gray'
-    # thresh = [75, 256]
-    # tileGridSize = 13
+    mode = 'gray'
+    thresh = [75, 256]
+    tileGridSize = 13
     # TH Param
-    mode = 'hsv_v'
-    thresh = [15, 256]
-    tileGridSize = 1
+    # mode = 'hsv_v'
+    # thresh = [15, 256]
+    # tileGridSize = 1
     knClose = 20
 
     clipLimit = 256
@@ -189,7 +189,7 @@ class Gate:
                                     256, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                     cv2.THRESH_BINARY_INV, blur_k*4+1, 2)
         bw_th3 = cv2.bitwise_and(th1, th3)
-        kernel = np.ones((self.knClose, self.knClose), np.uint8)
+        kernel = np.ones((self.knClose, 2*self.knClose), np.uint8)
         closing = cv2.morphologyEx(bw_th3, cv2.MORPH_CLOSE, kernel)
         _, cts, hi = cv2.findContours(
                closing, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)

@@ -9,19 +9,25 @@ class GateCheck:
 
     def predict(self, ct, img=None):
         x, y, w, h = cv2.boundingRect(ct)
+        (cx, cy), (w, h), angle = cv2.minAreaRect(ct)
+
         ct_area = cv2.contourArea(ct)
         objAreaRatio = ct_area/float(w*h)
-        ratioCond1 = False or ((h*2 > 0.75*w) and (h < 1.25*w))
-        ratioCond2 = ((h*2 > 0.75*w) and (h*2 < 1.25*w))
+        # ratioCond1 = False or ((h*2 > 0.75*w) and (h < 1.25*w))
+        # ratioCond2 = ((h*2 > 0.75*w) and (h*2 < 1.25*w))
+        ratioCond1 = False and ((h*2 > 0.75*w) and (h < 1.25*w))
+        # ratioCond2 = ((w/h > 4.5) and (w/h < 11.5))
+        ratioCond2 = ((w/h > 4.5) and (w/h < 15)) and abs(angle) < 45
         heightCond = True
         sizeCond = True
         if img is not None:
             heightCond = y/img.shape[0] < 0.7
-            sizeCond = (float(w*h)/img.shape[0]/img.shape[1]) > 0.025 and (
-                float(w*h)/img.shape[0]/img.shape[1]) < 0.90
-        cropped = self.cropFour(img, ct)
-        condLeg = self.condLeg(cropped)
-        sumCond = objAreaRatio < 0.3 and (
+            sizeCond = (float(w*h)/img.shape[0]/img.shape[1]) > 0.008 and (
+                float(w*h)/img.shape[0]/img.shape[1]) < 0.50
+        condLeg = True
+        # cropped = self.cropFour(img, ct)
+        # condLeg = self.condLeg(cropped)
+        sumCond = objAreaRatio > 0.1 and objAreaRatio < 0.8 and (
             ratioCond1 or ratioCond2) and condLeg and sizeCond and heightCond
         debug = {
             'objAreaRatio': objAreaRatio,
@@ -30,6 +36,8 @@ class GateCheck:
             'heightCond': heightCond,
             'sizeCond': sizeCond,
             'condLeg': condLeg,
+            'angle': angle,
+            'w,h': (w, h)
         }
         # print(debug)
         if sumCond:
@@ -72,6 +80,7 @@ class GateCheck:
         thirdCond = third.sum()/second.size > 0
         # cv2.imshow('third', cropped[1])
         # print(third.sum()/third.size)
-        cond = cond and ((not thirdCond and secondCond) or (not secondCond and thirdCond))
+        cond = cond and ((not thirdCond and secondCond)
+                         or (not secondCond and thirdCond))
         cv2.waitKey(0)
         return cond

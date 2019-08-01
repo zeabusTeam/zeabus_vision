@@ -56,10 +56,12 @@ class Buoy:
         # Load ML Lib
         # self.ML = BuoyML()
 
+        self.clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(20, 20))
+
         # Load Ref img
         filedir = os.path.dirname(os.path.abspath(__file__))
         self.jiangshi = cv2.imread(os.path.join(
-            filedir, 'pictures', 'jiangshi.png'), 0)
+            filedir, 'pictures', 'jiangshi_usa.png'), 0)
         # self.jiangshi = cv2.resize(self.jiangshi, None, fx=0.1, fy=0.1)
         # self.jiangshi = cv2.medianBlur(self.jiangshi, 7)
         self.sift = cv2.xfeatures2d.SIFT_create()
@@ -70,8 +72,8 @@ class Buoy:
         FLANN_INDEX_KDTREE = 0
         index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=8)
         search_params = dict(checks=50)
-        self.flann = cv2.FlannBasedMatcher(index_params, search_params)
-        # self.flann = cv2.BFMatcher()
+        # self.flann = cv2.FlannBasedMatcher(index_params, search_params)
+        self.flann = cv2.BFMatcher()
 
     def openSource(self, sourceType, source=0):
         if sourceType == self.SOURCE_TYPE['FILE']:
@@ -114,6 +116,7 @@ class Buoy:
         # self.img_sm = cv2.cvtColor(img_lab, cv2.COLOR_LAB2BGR)
         self.img_sm = cv2.GaussianBlur(self.img_sm, (3, 3), 256)
         self.img_gray = cv2.cvtColor(self.img_sm, cv2.COLOR_BGR2GRAY)
+        self.img_gray = self.clahe.apply(self.img_gray)
 
     def process_seg(self):
         result = BuoyReturn()
@@ -146,11 +149,14 @@ class Buoy:
             x, y, w, h = cv2.boundingRect(ct)
             obj = out[y:y+h, x:x+w]
             gray_crop = cv2.cvtColor(obj, cv2.COLOR_BGR2GRAY)
+            gray_crop = gray_crop[int(
+                gray_crop.shape[0]*0.3):int(gray_crop.shape[0]*0.558)]
             _, th = cv2.threshold(
                 gray_crop, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
             circles = cv2.HoughCircles(
                 th, cv2.HOUGH_GRADIENT, 1, 20,
-                param1=50, param2=10, maxRadius=int(obj.shape[0]/10))
+                param1=50, param2=10, maxRadius=int(obj.shape[0]/16),
+                minRadius=int(obj.shape[0]/22))
             if circles is not None and cv2.contourArea(ct)/self.img_sm.shape[0]/self.img_sm.shape[1] < 0.6:
                 cv2.rectangle(self.img_sm, (x, y),
                               (x+w, y+h), (0, 255, 255), 3)
@@ -246,11 +252,14 @@ class Buoy:
                     return result
 
         gray_crop = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+        gray_crop = gray_crop[int(
+            gray_crop.shape[0]*0.3):int(gray_crop.shape[0]*0.558)]
         _, th = cv2.threshold(
             gray_crop, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         circles = cv2.HoughCircles(
             th, cv2.HOUGH_GRADIENT, 1, 20,
-            param1=50, param2=10, maxRadius=int(cropped.shape[0]/10))
+            param1=50, param2=10, maxRadius=int(cropped.shape[0]/16),
+            minRadius=int(cropped.shape[0]/22))
         if circles is None:
             result.result_img = self.drawDebug(
                 kp, matches, matchesMask, queryBorder=queryBorder)
