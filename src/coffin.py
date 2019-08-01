@@ -1,6 +1,7 @@
 #!/usr/bin/python2.7
 import rospy
 import os
+import math
 import cv2 as cv
 import numpy as np
 from time import time
@@ -96,6 +97,8 @@ def message(box1=0, area1=0, box2=0, area2=0, state=0):
 
 
 def get_mask():
+    himg, wimg = image.bgr.shape[:2]
+    black = np.zeros((himg, wimg), np.uint8)
     image.to_hsv()
     blur = cv.medianBlur(image.hsv, 11)
     # upper = np.array([72, 255, 255], dtype=np.uint8)
@@ -103,7 +106,53 @@ def get_mask():
     lower = np.array([19, 173, 29], dtype=np.uint8)
     upper = np.array([46, 255, 169], dtype=np.uint8)
     mask = cv.inRange(blur, lower, upper)
-    return mask
+    mask = cv.GaussianBlur(mask, (5, 5), 0)
+    # kernel = np.ones((15,15),np.uint8)
+    # mask = cv.dilate(edges,kernel)
+    # kernel = np.ones((11,1),np.uint8)
+    # edges = cv.dilate(edges,kernel)
+    output.publish(mask, 'gray', '/m')
+    contour = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)[1]
+    cv.drawContours(image.display, contour, 0, (255, 255, 255), -1)
+    # output.publish(image.display, 'bgr', '/t')
+    if len(contour) != 0:
+        # cv.drawContours(image.display,contour,0,(255,255,255),2)
+        # output.publish(image.display, 'bgr', '/t')
+        for cnt in contour:
+            x, y, w, h = cv.boundingRect(cnt)
+            min_area = 6000
+            max_area = 45000
+            approx = cv.approxPolyDP(cnt, 0.01*cv.arcLength(cnt, True), True)
+            area = cv.contourArea(cnt)
+            print "area = " + str(area)
+            print "------------"
+            print len(approx)
+            if len(approx) >= 15 and area <= 8000:
+                print "return approx"
+                continue
+            if min_area >= area or area >= max_area:
+                print "return area"
+                continue
+            rect = cv.minAreaRect(cnt)
+            w_cnt = rect[1][0]
+            h_cnt = rect[1][1]
+            box = cv.boxPoints(rect)
+            box = np.int0(box)
+            print abs(w_cnt*h_cnt - area)
+            if abs(w_cnt*h_cnt - area) > 2000:
+                print "return ratio area"
+                continue
+            if abs(w-h) <= 15:
+                print "circle area = " + str(abs(math.pi*w/2*w/2))
+                if abs(area-(math.pi*w/2*w/2)) <= 700:
+                    print "circle return"
+                    continue
+            cv.drawContours(black, [cnt], 0, (255, 255, 255), -1)
+            cv.drawContours(image.display, [cnt], 0, (255, 255, 255), -1)
+
+    output.publish(black, 'gray', '/filtered')
+    output.publish(image.display, 'bgr', '/filtered_display')
+    return black
 
 
 def find_coffin():
