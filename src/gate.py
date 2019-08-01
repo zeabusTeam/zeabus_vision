@@ -11,8 +11,11 @@ from vision_lib import ImageTools
 from gate_buoy_debug_lib import gblog
 
 
+# USE_IMG_SEG = True
+USE_IMG_SEG = False
 SUB_SAMPLING = 1
 PUBLIC_TOPIC = '/vision/mission/gate'
+SEG_TOPIC = '/semantic_segmentation/compressed'
 CAMERA_TOPIC = ImageTools().topic('front')
 DEBUG = {
     'console': False,
@@ -23,6 +26,7 @@ if DEBUG['oldbag']:
 
 process_obj = Gate()
 image = None
+img_seg = None
 result_pub = None
 mask_pub = None
 last_found = [0.0, 0.0, 0.0, 0.0, 0.0]
@@ -38,11 +42,23 @@ def imageCallback(msg):
     image = cv.resize(cv_image, None, fx=SUB_SAMPLING, fy=SUB_SAMPLING)
 
 
+def segCallback(msg):
+    global img_seg, bridge, SUB_SAMPLING
+    try:
+        cv_image = bridge.compressed_imgmsg_to_cv2(msg)
+    except CvBridgeError as e:
+        _log(str(e), 'error')
+    img_seg = cv.resize(cv_image, None, fx=SUB_SAMPLING, fy=SUB_SAMPLING)
+
+
 def find_gate():
-    global image, last_found, result_pub, mask_pub, bridge
+    global image, img_seg, last_found, result_pub, mask_pub, bridge
     output = None
     if image is not None:
-        output, img, mask = process_obj.doProcess(image)
+        if USE_IMG_SEG:
+            output, img, mask = process_obj.doProcess(image, img_seg=img_seg)
+        else:
+            output, img, mask = process_obj.doProcess(image)
         result_pub.publish(bridge.cv2_to_imgmsg(img, encoding="bgr8"))
         mask_pub.publish(bridge.cv2_to_imgmsg(mask))
         if output is not None:
@@ -83,7 +99,15 @@ def gate_callback(msg):
         res.x_left = 0.0
         res.x_right = 0.0
         res.area = 0.0
-    # gblog(res.__dict__)
+    printable = {
+        'found': res.found,
+        'cx1': res.cx1,
+        'cy1': res.cy1,
+        'x_left': res.x_left,
+        'x_right': res.x_right,
+        'area': res.area,
+    }
+    gblog(printable)
     return res
 
 
@@ -97,6 +121,7 @@ def main():
         mask_pub = rospy.Publisher(
             PUBLIC_TOPIC+'/mask', Image, queue_size=10)
         rospy.Subscriber(CAMERA_TOPIC, CompressedImage, imageCallback)
+        rospy.Subscriber(SEG_TOPIC, CompressedImage, segCallback)
         _log("Service is running.")
         rospy.spin()
 

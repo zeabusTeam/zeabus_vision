@@ -10,7 +10,7 @@
     <arg name="master_gain" value="10" />
     <arg name="red_gain" value="100" />
     <arg name="green_gain" value="0" />
-    <arg name="blue_gain" value="20" />
+    <arg name="blue_gain" value="37" />
     <arg name="auto_exposure" value="False" />
     <arg name="exposure" value="1.0" />
     <arg name="auto_white_balance" value="False" />

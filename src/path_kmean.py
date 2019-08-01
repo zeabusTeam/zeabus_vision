@@ -98,15 +98,13 @@ def get_obj(mask):
     if area < 2500:
     	return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     x,y,w,h = cv.boundingRect(cnt)
-    if area < w*h/10:
-        return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-    #if h < w*3/4 :
-    	#return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+    if h < w*3/4 :
+    	return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     # cv.rectangle(mask,(x,y),(x+w,y+h),(255,255,255),2)
     y_bot_crop = y
-    for i in range (1,7) :
+    for i in range (1,11) :
         y_top_crop = y_bot_crop
-        y_bot_crop = y+(h*i/7)
+        y_bot_crop = y+(h*i/10)
         # print i
         # print h
         # print y_top_crop
@@ -141,24 +139,21 @@ def get_obj(mask):
     if turn_point != 0 :
         first_ang = math.atan2(cy[1]-cy[turn_point],cx[1]-cx[turn_point])
         first_ang = math.degrees(first_ang)
-        last_ang = math.atan2(cy[turn_point]-cy[6],cx[turn_point]-cx[6])
+        last_ang = math.atan2(cy[turn_point]-cy[10],cx[turn_point]-cx[10])
         last_ang = math.degrees(last_ang)
         # print ("f - l = " + str((abs(first_ang - last_ang))))
-        if (abs(first_ang - last_ang) < 25) :
+        if (abs(first_ang - last_ang) < 34) :
             turn_point = 0
     if turn_point == 0 :
-		#if h < w :
-			#return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-		#else :
-		n_point = 2
-		area1 = cv.contourArea(cnt)/(himg*wimg)
-		area2 = 0.0
-		cx1 = cx[6]
-		cy1 = cy[6]
-		cx2 = cx[1]
-		cy2 = cy[1]
- 		cx3 = 0.0
- 		cy3 = 0.0
+        n_point = 2
+        area1 = cv.contourArea(cnt)/(himg*wimg)
+        area2 = 0.0
+        cx1 = cx[10]
+        cy1 = cy[10]
+        cx2 = cx[1]
+        cy2 = cy[1]
+        cx3 = 0.0
+        cy3 = 0.0
     else :
         n_point = 3
         # crop_top = mask[y:y+(turn_point*h/10),x:x+w]
@@ -169,8 +164,8 @@ def get_obj(mask):
         # area2 = cv.contourArea(cnt_bot)/(himg*wimg)
         # cv.rectangle(mask,(x,y),(x+w,y+(turn_point*h/10)),(255,255,255),2)
         # cv.rectangle(mask,(x,y+(turn_point*h/10)),(x+w,y+h),(255,255,255),2)
-        cx1 = cx[6]
-        cy1 = cy[6]
+        cx1 = cx[10]
+        cy1 = cy[10]
         cx3 = cx[1]
         cy3 = cy[1]
         cx2 = cx[turn_point]

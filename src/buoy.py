@@ -10,7 +10,7 @@ from vision_lib import ImageTools
 
 from gate_buoy_debug_lib import gblog
 
-USE_IMG_SEG = True
+USE_IMG_SEG = False
 SUB_SAMPLING = 1
 PUBLIC_TOPIC = '/vision/mission/buoy'
 SEG_TOPIC = '/semantic_segmentation/compressed'

@@ -96,6 +96,7 @@ def get_mask():
 
 
 def get_obj(mask):
+    image.renew_display() 
     cx = []
     cy = []
     cx.append(0)
@@ -114,23 +115,38 @@ def get_obj(mask):
     area2 = 0.0 
     n_point = 0.0
     himg, wimg = mask.shape[:2]
+    i = 0
     contour = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)[1]
+    cv.drawContours(image.display,contour,0,(255,255,255),2)
+    output.publish(image.display,'bgr','/cnt')
     if len(contour) == 0:
 		return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
     for cnt in contour :
+        print "i = " + str(i)
+        i += 1
         area = cv.contourArea(cnt)
         x,y,w,h = cv.boundingRect(cnt)
+        print "h = " + str(h)
+        print "w = " + str(w)
         minarea = 1500
         maxarea = wimg*himg/10
         ratio_area = w*h/10
         # print "maxarea = " + str(w*h/10)
         print "area = " + str(area)
+        if w >= h*10 :
+            print "too long"
+            continue
         if minarea >= area or area >= maxarea or area <= ratio_area:
             print "area return"
             continue
         if float(w*h)/(wimg*himg) >= float(2/3.0) :
             print "ratio return"
             continue
+        if abs(w-h) <= 15 :
+            print "circle area = " + str(abs(math.pi*w/2*w/2))
+            if abs(area-(math.pi*w/2*w/2)) <= 300 :
+                print "circle return"
+                continue
         #if h < w*3/4 :
             #return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
         # cv.rectangle(mask,(x,y),(x+w,y+h),(255,255,255),2)
@@ -143,7 +159,7 @@ def get_obj(mask):
         # print "w/h = " + str(w/h)
         if len(approx) > 15 :
             print "len(approx) return"
-            return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+            continue
         for i in range (1,10) :
         # print "w/h = " + str(w*1.0/h*1.0)
             if w*1.0/h*1.0 >= 1.5 :
@@ -198,13 +214,13 @@ def get_obj(mask):
                         cy_crop = 0
                 else:
                     continue
-            cv.circle(mask,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
+            cv.circle(image.display,(int(cx_crop),int(cy_crop)),3,(0, 255, 255), -1)
             # pub.publish_result(mask,'gray','/p')
             old_area_crop = area_crop
             area_crop = cv.contourArea(cnt_crop)
             if i > 1 and area_crop - old_area_crop > 700 :
                 print "diff area return"
-                return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0    
+                continue   
             # print ("area_crop = " + str(area_crop))
             cx.append(cx_crop)
             cy.append(cy_crop)
@@ -262,8 +278,8 @@ def get_obj(mask):
                     cy2 = cy[1]
                 cx3 = 0.0
                 cy3 = 0.0
-                cv.putText(mask,"1",(cx1-30,cy1),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
-                cv.putText(mask,"2",(cx2-30,cy2),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+                cv.putText(image.display,"1",(cx1-30,cy1),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+                cv.putText(image.display,"2",(cx2-30,cy2),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
             else:
                 cx1 = 0.0
                 cy1 = 0.0
@@ -302,9 +318,9 @@ def get_obj(mask):
 
             cx2 = cx[index]
             cy2 = cy[index]
-            cv.putText(mask,"1",(cx1-30,cy1),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
-            cv.putText(mask,"2",(cx2-30,cy2),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
-            cv.putText(mask,"3",(cx3-30,cy3),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+            cv.putText(image.display,"1",(cx1-30,cy1),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+            cv.putText(image.display,"2",(cx2-30,cy2),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
+            cv.putText(image.display,"3",(cx3-30,cy3),cv.FONT_HERSHEY_PLAIN,2,color=(255,255,255))
             # crop_top = mask[y:cy2,x:x+w]
             # cnt_top = max(cv.findContours(crop_top, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[1],key=cv.contourArea)
             # area2 = cv.contourArea(cnt_top)/(himg*wimg)
@@ -341,7 +357,7 @@ def get_obj(mask):
         cv.circle(mask,(int(cx1),int(cy1)),3,(0, 255, 255), -1)
         cv.circle(mask,(int(cx2),int(cy2)),3,(0, 255, 255), -1)
         cv.circle(mask,(int(cx3),int(cy3)),3,(0, 255, 255), -1)
-        output.publish(mask,'gray','/p')
+        output.publish(image.display,'bgr','/res')
         return wimg,himg,cx1,cy1,cx2,cy2,cx3,cy3,area1,area2,n_point
     return wimg,himg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
             # t_top = y  
@@ -396,7 +412,7 @@ def find_path():
 if __name__ == '__main__':
     rospy.init_node('vision_path', anonymous=False)
     output.log("INIT NODE", AnsiCode.GREEN)
-    rospy.Subscriber('/bottom/left/image_raw/compressed', CompressedImage, image.callback)
+    rospy.Subscriber(image.topic("bottom"), CompressedImage, image.callback)
     output.log("INIT SUBSCRIBER", AnsiCode.GREEN)
     rospy.Service('/vision/path',
                   VisionSrvPath(), mission_callback)
