@@ -132,7 +132,7 @@ def get_mask():
             area = cv.contourArea(cnt)
             print "area = " + str(area)
             print "------------"
-            print len(approx)
+            print ('len',len(approx))   
             if len(approx) >= 15 and area <= 8000:
                 print "return approx"
                 continue
@@ -151,8 +151,9 @@ def get_mask():
                 print ("return ratio area", 1.0*abs(w_cnt*h_cnt - area)/area_cnt)
                 continue
             if abs(w-h) <= 15:
-                print "circle area = " + str(abs(math.pi*w/2*w/2))
-                if abs(area-(math.pi*w/2*w/2)) <= 700:
+                circle_area = abs(math.pi*w/2*w/2)
+                print "circle area = " + str(circle_area)
+                if 1.0*abs(area-circle_area)/circle_area <= 0.1:
                     print "circle return"
                     continue
             cv.drawContours(black, [cnt], 0, (255, 255, 255), -1)
