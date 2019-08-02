@@ -34,7 +34,7 @@ class BuoyReturn:
 
 class Buoy:
 
-    lockX = 800
+    lockX = 1500
     MIN_POINTS = 5
 
     SOURCE_TYPE = {
