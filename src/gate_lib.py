@@ -17,13 +17,13 @@ class Gate:
     useif = True
     # USA Param
     mode = 'gray'
-    thresh = [75, 256]
-    tileGridSize = 13
+    thresh = [60, 256]
+    tileGridSize = 31
     # TH Param
     # mode = 'hsv_v'
     # thresh = [15, 256]
     # tileGridSize = 1
-    knClose = 20
+    knClose = 8
 
     clipLimit = 256
 
@@ -38,7 +38,7 @@ class Gate:
         self.last_detect = None
         self.notfound = 0
         self.clahe = cv2.createCLAHE(clipLimit=self.clipLimit, tileGridSize=(
-            self.tileGridSize, self.tileGridSize))
+            self.tileGridSize*2, self.tileGridSize))
 
     def adjustKernel(self, th):
         self.knClose = th
@@ -178,9 +178,14 @@ class Gate:
         blur_k = int(self.img_size[0]/150)
         blur_k += (blur_k+1) % 2
         noise_removed = cv2.medianBlur(gray, blur_k)
+        ret, mask = cv2.threshold(
+            noise_removed, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
         ret, th1 = cv2.threshold(
-            noise_removed, self.thresh[0], 256,
+            noise_removed, ret*0.4, 256,
             cv2.THRESH_BINARY_INV)
+        # ret, th1 = cv2.threshold(
+        #     noise_removed, self.thresh[0], 256,
+        #     cv2.THRESH_BINARY_INV)
         # th1 = cv2.adaptiveThreshold(noise_removed,
         #                             256, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         #                             cv2.THRESH_BINARY_INV,

@@ -12,6 +12,10 @@ class GateCheck:
         (cx, cy), (w, h), angle = cv2.minAreaRect(ct)
 
         ct_area = cv2.contourArea(ct)
+        if w*h == 0:
+            return 0
+        if y == 0:
+            return 0
         objAreaRatio = ct_area/float(w*h)
         # ratioCond1 = False or ((h*2 > 0.75*w) and (h < 1.25*w))
         # ratioCond2 = ((h*2 > 0.75*w) and (h*2 < 1.25*w))
@@ -21,7 +25,7 @@ class GateCheck:
         heightCond = True
         sizeCond = True
         if img is not None:
-            heightCond = y/img.shape[0] < 0.7
+            heightCond = y/img.shape[0] < 0.5
             sizeCond = (float(w*h)/img.shape[0]/img.shape[1]) > 0.008 and (
                 float(w*h)/img.shape[0]/img.shape[1]) < 0.50
         condLeg = True
