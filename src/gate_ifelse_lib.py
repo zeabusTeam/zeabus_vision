@@ -8,6 +8,11 @@ import cv2
 class GateCheck:
 
     def predict(self, ct, img=None):
+        if self.predict_full(ct, img) == 1:
+            return 1
+        return self.predict_top(ct, img)
+
+    def predict_top(self, ct, img=None):
         x, y, w, h = cv2.boundingRect(ct)
         (cx, cy), (w, h), angle = cv2.minAreaRect(ct)
 
@@ -42,6 +47,35 @@ class GateCheck:
             'condLeg': condLeg,
             'angle': angle,
             'w,h': (w, h)
+        }
+        # print(debug)
+        if sumCond:
+            return 1
+        return 0
+
+    def predict_full(self, ct, img=None):
+        x, y, w, h = cv2.boundingRect(ct)
+        ct_area = cv2.contourArea(ct)
+        objAreaRatio = ct_area/float(w*h)
+        ratioCond1 = False or ((h*2 > 0.75*w) and (h < 1.25*w))
+        ratioCond2 = ((h*2 > 0.75*w) and (h*2 < 1.25*w))
+        heightCond = True
+        sizeCond = True
+        if img is not None:
+            heightCond = y/img.shape[0] < 0.7
+            sizeCond = (float(w*h)/img.shape[0]/img.shape[1]) > 0.025 and (
+                float(w*h)/img.shape[0]/img.shape[1]) < 0.90
+        cropped = self.cropFour(img, ct)
+        condLeg = self.condLeg(cropped)
+        sumCond = objAreaRatio < 0.35 and (
+            ratioCond1 or ratioCond2) and condLeg and sizeCond and heightCond
+        debug = {
+            'objAreaRatio': objAreaRatio,
+            'ratioCond1': ratioCond1,
+            'ratioCond2': ratioCond2,
+            'heightCond': heightCond,
+            'sizeCond': sizeCond,
+            'condLeg': condLeg,
         }
         # print(debug)
         if sumCond:
