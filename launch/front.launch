@@ -7,10 +7,10 @@
     <arg name="image_height" value="1216" />
     <arg name="color_mode" value="bgr8" />
     <arg name="auto_gain" value="False" />
-    <arg name="master_gain" value="10" />
-    <arg name="red_gain" value="50" />
+    <arg name="master_gain" value="11" />
+    <arg name="red_gain" value="80" />
     <arg name="green_gain" value="0" />
-    <arg name="blue_gain" value="60" />
+    <arg name="blue_gain" value="69" />
     <arg name="auto_exposure" value="False" />
     <arg name="exposure" value="33.0" />
     <arg name="auto_white_balance" value="False" />
@@ -45,6 +45,11 @@
     </node>
 
     <node pkg="image_proc" name="image_proc" type="image_proc" output="screen" ns="/vision/front"></node>
+    <rosparam param="/vision/front/disable_pub_plugins">
+        <!-- - '/image_raw/compressedDepth' -->
+        - '/image_raw/compressed'
+        <!-- - '/image_raw/compressedDepth' -->
+    </rosparam>
 
     <arg name="place" value="ku"/>
     <rosparam ns="auto_exposure_front" command="load" file="$(find zeabus_vision)/camera_info/$(arg place)/front/exposure.yaml"/>

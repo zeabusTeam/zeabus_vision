@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 from cv_bridge import CvBridge
 from std_msgs.msg import Float64
-from sensor_msgs.msg import Image, CompressedImage
+from sensor_msgs.msg import Image
 from geometry_msgs.msg import Point
 from zeabus_utility.msg import VisionBox
 from constant import AnsiCode
@@ -28,22 +28,6 @@ class OutputTools:
         print(AnsiCode.RED + 'img is none.'+'\n'
               'Please check topic name or check camera is running' +
               AnsiCode.DEFAULT)
-
-    def new_publish(self, img, color, subtopic):
-        """
-            buggy plz don't use
-            publish picture
-        """
-        if img is None:
-            img = np.zeros((200, 200))
-            color = "gray"
-        pub = rospy.Publisher(self.topic + str(subtopic),
-                              CompressedImage, queue_size=10)
-        if color == 'gray':
-            msg = self.bridge.cv2_to_compressed_imgmsg(img)
-        elif color == 'bgr':
-            msg = self.bridge.cv2_to_compressed_imgmsg(img)
-        pub.publish(msg)
 
     def publish(self, img, color, subtopic):
         """
@@ -80,9 +64,9 @@ class TransformTools:
 
     def convert_to_point(self, pt, shape):
         himg, wimg = shape[:2]
-        x = self.convert(pt[0], wimg)
-        y = -1.0*self.convert(pt[1], himg)
-        return [x, y]
+        x = self.convert(pt[0],wimg)
+        y = -1.0*self.convert(pt[1],himg)
+        return [x,y]
 
     def to_box(self, pt1, pt2, pt3, pt4, area, shape, state=0):
         himg, wimg = shape[:2]
@@ -91,10 +75,9 @@ class TransformTools:
         box.point_2 = self.convert_to_point(pt2, shape)
         box.point_3 = self.convert_to_point(pt3, shape)
         box.point_4 = self.convert_to_point(pt3, shape)
-        box.area = self.convert(area, himg*wimg)
+        box.area = self.convert(area,himg*wimg)
         box.state = state
         return box
-
 
 class ImageTools:
     def __init__(self, sub_sampling=0.3):
@@ -201,9 +184,9 @@ class ImageTools:
             )
         else:
             sub_pos = np.clip(sub_sign.copy(),0,sub_sign.copy().max())
-            sub_pos = self.normalize(sub_pos)
-            _, result = cv.threshold(
-                sub_pos, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU
+            sub_pos = normalize(sub_pos)
+            _, obj_pos = cv.threshold(
+                result, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU
             )
 
         # time_duration = rospy.Time.now()-start_time
@@ -283,30 +266,3 @@ class Statistics:
             print("SKEWBESS:", skewness)
 
         return skewness
-
-
-class Detector:
-    ''' make some constant don't repeat run'''
-
-    def __init__(self, picture_name, min_match=20):
-        import os
-        self.PICTURE_NAME = 'pictures/' + picture_name
-        self.MIN_MATCH_COUNT = min_match
-        self.FLANN_INDEX_KDITREE = 0
-        self.sift = cv.xfeatures2d.SIFT_create()
-        self.file_dir = os.path.dirname(os.path.abspath(__file__))
-        self.picture_dir = os.path.join(self.file_dir, self.PICTURE_NAME)
-        self.picture = cv.imread(self.picture_dir)
-        self.flannParam = dict(algorithm=self.FLANN_INDEX_KDITREE, tree=5)
-        self.flann = cv.FlannBasedMatcher(self.flannParam, {})
-        self.train_keypoint, self.train_desc = self.compute(self.picture)
-
-    def compute(self, img):
-        result = self.sift.detectAndCompute(img, None)
-        return result
-
-    def get_train_border(self):
-        h, w = self.picture.shape[:2]
-        trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
-        return trainBorder
-
