@@ -53,6 +53,7 @@ add_message_files(
   FILES
   TestMpData.msg
   TestVisionData.msg
+  VisionMergeData.msg
 )
 
 ## Generate services in the 'srv' folder
