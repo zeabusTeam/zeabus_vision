@@ -10,9 +10,10 @@ from constant import AnsiCode
 
 
 class OutputTools:
-    def __init__(self, topic):
+    def __init__(self, topic=None):
         self.bridge = CvBridge()
-        self.topic = str(topic)
+        if(topic != None):
+            self.topic = str(topic)
 
     def log(self, msg, color=AnsiCode.DEFAULT):
         """
