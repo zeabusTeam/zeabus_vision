@@ -2,14 +2,13 @@
 """
     File name: task_process.py
     Author: AyumiizZ
-    Date created: 2019/9/16
+    Date created: 2019/10/22
     Python Version: 2.7
 """
 import rospy
 from random import randint, randrange
 import numpy as np
 import cv2 as cv
-# from zeabus_vision.msg import TestVisionData, TestMpData
 
 
 class Task:
