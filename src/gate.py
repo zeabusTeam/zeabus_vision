@@ -27,10 +27,10 @@ def message(state=0, pos=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, area=0.0):
     msg.label = 'gate'
     msg.state = state
     msg.area = area
-    msg.point_1 = [cx1,cy1]
-    msg.point_2 = [cx2,cy1]
-    msg.point_3 = [cx2,cy2]
-    msg.point_4 = [cx1,cy2]
+    msg.point_1 = [cx1, cy1]
+    msg.point_2 = [cx2, cy1]
+    msg.point_3 = [cx2, cy2]
+    msg.point_4 = [cx1, cy2]
     return msg
 
 
@@ -142,7 +142,7 @@ def find_gate():
 
     himg, wimg = obj.shape[:2]
     mode = no_pipe_v
-    
+
     if mode == 0:
         output.log("NOT FOUND", AnsiCode.RED)
         output.publish_image(image.display, 'bgr', subtopic='/display')
@@ -171,13 +171,11 @@ def find_gate():
               3, (0, 255, 255), -1)
 
     area = 1.0*abs(cx2-cx1)*abs(cy2-cy1)/(himg*wimg)
-    pos=-7411
+    pos = -7411
     output.publish_image(image.display, 'bgr', subtopic='/display')
     output.publish_image(vertical, 'gray', subtopic='/mask/vertical')
     output.publish_image(obj, 'gray', subtopic='/mask')
     return message(state=mode, cx1=cx1, cy1=cy1, cx2=cx2, cy2=cy2, pos=pos, area=area)
-
-
 
 
 if __name__ == '__main__':
