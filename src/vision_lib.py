@@ -8,56 +8,86 @@ from geometry_msgs.msg import Point
 from zeabus_utility.msg import VisionBox
 from constant import AnsiCode
 
+import os
+
 
 class OutputTools:
     def __init__(self, topic):
         self.bridge = CvBridge()
-        self.topic = str(topic)
+        self.topic = self.process_topic(topic)
+        self.end_loop = True
+
+    def process_topic(self, topic):
+        '''
+            Example topic: '/vision/gate'
+
+            if input is '':
+                return /vision/empty_topic/
+            else if input is '/vision/gate':
+                return input
+            else if input is 'vision/gate':
+                return '/' + input              # '/' + 'vision/gate' = '/vision/gate'
+            else if input is 'gate':
+                return '/vision/' + input       # '/vision/' + 'gate' = '/vision/gate'
+            else if input is '/gate':
+                return '/vision' + input        # '/vision' + '/gate' = '/vision/gate'
+        '''
+        if topic == '':
+            return '/vision/empty_topic/'
+        elif topic[:7] == '/vision':
+            return str(topic)
+        elif topic[:6] == 'vision':
+            return '/' + str(topic)
+        elif topic[0] != '/':
+            return '/vision/' + str(topic)
+        else:
+            return '/vision' + str(topic)
 
     def log(self, msg, color=AnsiCode.DEFAULT):
         """
             print ('<----------') + str(msg) + ('---------->')
             #len of <---msg---> = 80
         """
+        if self.end_loop:
+            os.system('clear')
         white_character = len(color) + 80
         temp = '<{:-^' + str(white_character) + '}>'
         print (temp.format(' ' + color +
                            str(msg) + AnsiCode.DEFAULT + ' '))
+        self.end_loop = False
 
     def img_is_none(self):
+        if self.end_loop:
+            os.system('clear')
         print(AnsiCode.RED + 'img is none.'+'\n'
               'Please check topic name or check camera is running' +
               AnsiCode.DEFAULT)
+        self.end_loop = False
 
-    def new_publish(self, img, color, subtopic):
-        """
-            buggy plz don't use
-            publish picture
-        """
-        if img is None:
-            img = np.zeros((200, 200))
-            color = "gray"
-        pub = rospy.Publisher(self.topic + str(subtopic),
-                              CompressedImage, queue_size=10)
-        if color == 'gray':
-            msg = self.bridge.cv2_to_compressed_imgmsg(img)
-        elif color == 'bgr':
-            msg = self.bridge.cv2_to_compressed_imgmsg(img)
-        pub.publish(msg)
+    def create_publish(self, datatype, subtopic):
+        '''
+            Expect subtopic example: '/image_result'
+            if input is 'image_result':
+                new subtopic = '/' + input      # '/' + 'image_result' = 'image_result'
+        '''
+        if subtopic[0] != '/':
+            subtopic = '/' + subtopic
+        return rospy.Publisher(self.topic + str(subtopic), datatype, queue_size=10)
 
-    def publish(self, img, color, subtopic):
+    def publish_image(self, img, color, publisher=None, subtopic=None):
         """
             publish picture
         """
+        if publisher == None:
+            publisher = self.create_publish(datatype=Image, subtopic=subtopic)
         if img is None:
             img = np.zeros((200, 200))
             color = "gray"
-        pub = rospy.Publisher(self.topic + str(subtopic), Image, queue_size=10)
         if color == 'gray':
             msg = self.bridge.cv2_to_imgmsg(img, "mono8")
         elif color == 'bgr':
             msg = self.bridge.cv2_to_imgmsg(img, "bgr8")
-        pub.publish(msg)
+        publisher.publish(msg)
 
 
 class TransformTools:
@@ -122,6 +152,7 @@ class ImageTools:
 
     def topic(self, camera):
         if camera == 'front':
+            return '/vision/front/image_raw/compressed'
             return '/vision/front/image_rect_color/compressed'
         elif camera == 'bottom':
             return '/vision/bottom/image_raw/compressed'
@@ -139,7 +170,6 @@ class ImageTools:
         """
         self.to_gray()
         bg = cv.medianBlur(self.gray, bg_blur_size)
-        OutputTools(topic='/test/').publish(bg, 'gray', 'bg')
         fg = cv.medianBlur(self.gray, fg_blur_size)
         sub_sign = np.int16(fg) - np.int16(bg)
         if mode == 'neg':
@@ -148,7 +178,7 @@ class ImageTools:
             _, obj = cv.threshold(
                 sub_neg, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
             return obj
-        if mode == 'pos':
+        elif mode == 'pos':
             sub_pos = np.clip(sub_sign.copy(), 0, sub_sign.copy().max())
             sub_pos = self.normalize(sub_pos)
             _, obj = cv.threshold(
