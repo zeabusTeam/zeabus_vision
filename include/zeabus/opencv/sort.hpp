@@ -16,6 +16,7 @@
 
 #include    <vector>
 #include    <opencv2/core/types.hpp>
+#include    <zeabus/opencv/operations.hpp>
 
 #ifndef _ZEABUS_OPENCV_SORT_HPP__
 #define _ZEABUS_OPENCV_SORT_HPP__
@@ -33,7 +34,7 @@ namespace sort
     }
 
     template< typename _Tp >
-    void sort_center( std::vector< cv::Point< _Tp > >* ptr_vector );
+    void center( std::vector< cv::Point_< _Tp > >* ptr_vector );
 
 } // namespace sort
 

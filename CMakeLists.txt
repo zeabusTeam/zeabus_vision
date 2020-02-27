@@ -28,6 +28,7 @@ generate_messages(
 
 set( zeabus_vision_include_path
     "${PROJECT_SOURCE_DIR}/include"
+    "${PROJECT_SOURCE_DIR}/dynamic_src"
 )
 
 catkin_package(

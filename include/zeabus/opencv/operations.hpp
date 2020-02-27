@@ -38,6 +38,12 @@ namespace operations
         }
     }
 
+    template< typename _Tp >
+    inline double size( const cv::Point_< _Tp >& point )
+    {
+        return sqrt( pow( point.x , 2 ) + pow( point.y , 2 ) );
+    }
+
 } // zeabus_opencv
 
 } // operations
