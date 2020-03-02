@@ -44,6 +44,14 @@ namespace operations
         return sqrt( pow( point.x , 2 ) + pow( point.y , 2 ) );
     }
 
+    template< typename _Tp >
+    inline double ratio( const cv::Size_< _Tp >& size )
+    {
+        double answer = size.width / size.height;
+        if( answer > 1 ) answer = 1.0 / answer;
+        return answer;
+    }
+
 } // zeabus_opencv
 
 } // operations

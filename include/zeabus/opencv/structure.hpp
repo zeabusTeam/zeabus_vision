@@ -44,6 +44,16 @@ namespace structure
     bool operator>( const Circle& lhs , const Circle& rhs );
     float operator-( const Circle& lhs , const Circle& rhs );
 
+    struct LineRect
+    {
+        cv::Point2f bl; // bottom_left
+        cv::Point2f tl; // top_left
+        cv::Point2f tr; // top_right
+        cv::Point2f br; // bottom_right
+
+        std::vector< cv::Point2f > get_vector();
+    };
+
 } // namespace structure
 
 } // namespace zeabus_opencv

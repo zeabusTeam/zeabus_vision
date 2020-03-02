@@ -79,6 +79,16 @@ namespace structure
         return lhs.radius > rhs.radius;
     }
 
+    std::vector< cv::Point2f > LineRect::get_vector()
+    {
+        std::vector< cv::Point2f > answer;
+        answer.push_back( this->bl );
+        answer.push_back( this->tl );
+        answer.push_back( this->tr );
+        answer.push_back( this->br );
+        return answer;
+    }
+
 } // namespace structure
 
 } // namespace zeabus_opencv

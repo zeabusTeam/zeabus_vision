@@ -26,28 +26,27 @@ generate_messages(
     nav_msgs
 )
 
-set( zeabus_vision_include_path
+set( path_header
     "${PROJECT_SOURCE_DIR}/include"
+)
+
+set( path_dynamic
     "${PROJECT_SOURCE_DIR}/dynamic_src"
 )
 
 catkin_package(
-    INCLUDE_DIRS ${zeabus_vision_include_path}
+    INCLUDE_DIRS ${path_header} ${path_dynamic}
     LIBRARIES Opencv
     CATKIN_DEPENDS message_runtime nav_msgs rospy sensor_msgs std_msgs roscpp
 #    DEPENDS system_lib
 )
 
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
 include_directories(
     ${catkin_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
-    "${zeabus_vision_include_path}"  
+    "${path_header}" 
+    "${path_dynamic}" 
 )
 
 add_subdirectory( static_src/zeabus )
+
