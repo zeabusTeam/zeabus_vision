@@ -36,7 +36,7 @@ set( path_dynamic
 
 catkin_package(
     INCLUDE_DIRS ${path_header} ${path_dynamic}
-    LIBRARIES Opencv
+    LIBRARIES Opencv RosSubImage
     CATKIN_DEPENDS message_runtime nav_msgs rospy sensor_msgs std_msgs roscpp
 #    DEPENDS system_lib
 )
