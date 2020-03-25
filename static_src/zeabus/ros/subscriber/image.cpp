@@ -29,7 +29,7 @@ namespace subscriber
     void Image::callback( const sensor_msgs::ImageConstPtr& msg )
     {
         this->ptr_mutex_data->lock();
-        *( this->ptr_mat_data ) = cv_bridge::toCvShare( msg , this->type_decode );
+        *( this->ptr_mat_data ) = cv_bridge::toCvShare( msg , this->type_decode )->image;
         *( this->ptr_header_data ) = msg->header;
         this->ptr_mutex_data->unlock();
     }

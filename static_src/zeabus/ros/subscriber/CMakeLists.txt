@@ -3,4 +3,4 @@ add_library( RosSubImage SHARED
 
 target_link_libraries( RosSubImage
     ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES } )
+    ${OpenCV_LIBRARIES} )
