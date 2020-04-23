@@ -11,7 +11,7 @@ import numpy as np
 import cv2 as cv
 from sensor_msgs.msg import CompressedImage, Image
 from zeabus_utility.msg import VisionObject
-from vision_lib import OutputTools, AnsiCode, ImageTools
+from vision_lib import OutputTools, AnsiCode, ImageTools, TransformTools
 
 from operator import itemgetter
 from time import time
@@ -20,7 +20,7 @@ from time import time
 image = ImageTools(sub_sampling=0.3)
 output = OutputTools(topic='/vision/gate')
 image_publisher = output.create_publish(datatype=Image, subtopic='/result')
-
+transform = TransformTools()
 
 def message(state=0, pos=0, cx1=0.0, cy1=0.0, cx2=0.0, cy2=0.0, area=0.0):
     msg = VisionObject()
@@ -172,6 +172,10 @@ def find_gate():
 
     area = 1.0*abs(cx2-cx1)*abs(cy2-cy1)/(himg*wimg)
     pos = -7411
+    cx1 = transform.convert(cx1, wimg)
+    cx1 = transform.convert(-1*cy1, himg)
+    cx1 = transform.convert(cx2, wimg)
+    cx1 = transform.convert(-1*cy2, himg)
     output.publish_image(image.display, 'bgr', subtopic='/display')
     output.publish_image(vertical, 'gray', subtopic='/mask/vertical')
     output.publish_image(obj, 'gray', subtopic='/mask')
