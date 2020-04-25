@@ -44,8 +44,5 @@ if __name__ == "__main__":
     port = 6969
     sub = zbuspy.Subscriber(
         ip=ip, port=port, datatype=zbuspy.msgs.OPENCVIMAGE, callback=callback)
-    print('ckpt1')
     main()
-    print('ckpt2')
     sub.kill()
-    print('ckpt3')
