@@ -46,7 +46,7 @@ class OutputTools:
     def log(self, msg, color=AnsiCode.DEFAULT):
         """
             print ('<----------') + str(msg) + ('---------->')
-            #len of <---msg---> = 80
+            # len of <---msg---> = 80
         """
         if self.end_loop:
             os.system('clear')
@@ -127,6 +127,14 @@ class TransformTools:
 
 
 class ImageTools:
+    class topic:
+        FRONT_RECT = '/vision/front/image_rect_color/compressed'
+        FRONT_RAW = '/vision/front/image_raw/compressed'
+        FRONT = FRONT_RECT
+
+        BOTTOM_RAW = '/vision/bottom/image_raw/compressed'
+        BOTTOM = BOTTOM_RAW
+
     def __init__(self, sub_sampling=0.3):
         self.bgr = None
         self.display = None
@@ -150,12 +158,6 @@ class ImageTools:
                              fx=self.sub_sampling, fy=self.sub_sampling)
         self.display = self.bgr.copy()
 
-    def topic(self, camera):
-        if camera == 'front':
-            return '/vision/front/image_raw/compressed'
-            return '/vision/front/image_rect_color/compressed'
-        elif camera == 'bottom':
-            return '/vision/bottom/image_raw/compressed'
 
     def renew_display(self):
         self.display = self.bgr.copy()
@@ -195,42 +197,43 @@ class ImageTools:
             return cv.getStructuringElement(cv.MORPH_CROSS, ksize)
         return None
 
-    def kmean(self, img, k , max_iter):
-        criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, max_iter, 1.0)
-        Z = img.reshape((-1,1))
+    def kmean(self, img, k, max_iter):
+        criteria = (cv.TERM_CRITERIA_EPS +
+                    cv.TERM_CRITERIA_MAX_ITER, max_iter, 1.0)
+        Z = img.reshape((-1, 1))
 
         # convert to np.float32
         Z = np.float32(Z)
 
         K = k
-        ret,label,center=cv.kmeans(Z,K,None,criteria,max_iter,cv.KMEANS_RANDOM_CENTERS)
+        ret, label, center = cv.kmeans(
+            Z, K, None, criteria, max_iter, cv.KMEANS_RANDOM_CENTERS)
 
         # Now convert back into uint8, and make original image
         center = np.uint8(center)
         res = center[label.flatten()]
         result = res.reshape((img.shape))
-        
+
         return result
 
-    def bg_subtraction_kmean(self, img, bg_k=1, fg_k=3, mode='neg',max_iter=5):
+    def bg_subtraction_kmean(self, img, bg_k=1, fg_k=3, mode='neg', max_iter=5):
         hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
-        gray,_,_ = cv.split(hsv)
+        gray, _, _ = cv.split(hsv)
 
         # start_time = rospy.Time.now()
-        bg = self.kmean(gray, k=bg_k , max_iter=max_iter)
-        fg = self.kmean(gray, k=fg_k , max_iter=max_iter)
-    
+        bg = self.kmean(gray, k=bg_k, max_iter=max_iter)
+        fg = self.kmean(gray, k=fg_k, max_iter=max_iter)
 
         sub_sign = np.int16(fg) - np.int16(bg)
-        
+
         if mode == 'neg':
-            sub_neg = np.clip(sub_sign.copy(),sub_sign.copy().min(),0)
+            sub_neg = np.clip(sub_sign.copy(), sub_sign.copy().min(), 0)
             sub_neg = self.normalize(sub_neg)
             _, result = cv.threshold(
                 sub_neg, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU
             )
         else:
-            sub_pos = np.clip(sub_sign.copy(),0,sub_sign.copy().max())
+            sub_pos = np.clip(sub_sign.copy(), 0, sub_sign.copy().max())
             sub_pos = self.normalize(sub_pos)
             _, result = cv.threshold(
                 sub_pos, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU
@@ -339,4 +342,3 @@ class Detector:
         h, w = self.picture.shape[:2]
         trainBorder = np.float32([[[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]])
         return trainBorder
-
