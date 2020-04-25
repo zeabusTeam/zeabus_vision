@@ -38,8 +38,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # zbuspy.Subscriber(image.topic.FRONT, CompressedImage,
-    #  callback=image.callback, queue_size=3)
     ip = '192.168.1.122'
     port = 6969
     sub = zbuspy.Subscriber(
