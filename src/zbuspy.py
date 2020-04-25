@@ -78,12 +78,15 @@ class Subscriber:
         # self.socket.setsockopt(zmq.RCVBUF, 10) # set buffer size = 10
         # self.socket.setsockopt(zmq.CONFLATE, 1) # use only last message
         self.socket.connect(self.connect_to)
+        self.start_time = time.time()
+        self.image_count = 0
         if self.enable_sync:
             self.sync()
         self.killed = False
         self.sub_thread = threading.Thread(
             target=self.subscribe, args=(callback, callback_args))
         self.sub_thread.start()
+        
         
 
     def sync(self):
@@ -98,6 +101,7 @@ class Subscriber:
         while not self.killed:
             try:
                 data = self.socket.recv()
+                self.image_count += 1
             except Exception:
                 print('Recieving End')
                 break
@@ -110,6 +114,8 @@ class Subscriber:
                     callback(cv_image, callback_args)
 
     def kill(self):
+        end_time = time() - self.start_time
+        print(1.0*self.image_count/end_time)
         self.killed = True
         self.socket.close()
         self.ctx.term()
