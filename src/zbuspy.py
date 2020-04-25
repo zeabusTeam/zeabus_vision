@@ -72,7 +72,7 @@ class Subscriber:
         self.connect_to = 'tcp://{}:{}'.format(self.ip, self.port)
         self.ctx = zmq.Context()
         self.socket = self.ctx.socket(zmq.SUB)
-        self.socket.setsockopt(zmq.SUBSCRIBE, '')
+        self.socket.setsockopt_string(zmq.SUBSCRIBE, '')
         self.socket.setsockopt(zmq.LINGER, 0)
         # self.socket.setsockopt(zmq.RCVTIMEO, 10)
         # self.socket.setsockopt(zmq.RCVBUF, 10) # set buffer size = 10
@@ -80,11 +80,11 @@ class Subscriber:
         self.socket.connect(self.connect_to)
         if self.enable_sync:
             self.sync()
-
+        self.killed = False
         self.sub_thread = threading.Thread(
             target=self.subscribe, args=(callback, callback_args))
         self.sub_thread.start()
-        self.killed = False
+        
 
     def sync(self):
         sync_with = 'tcp://{}:{}'.format(self.ip, int(self.port)+1)
