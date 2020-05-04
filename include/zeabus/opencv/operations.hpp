@@ -52,6 +52,12 @@ namespace operations
         return answer;
     }
 
+    template< typename _Tp >
+    inline double distance( const cv::Point_< _Tp >& p_1 , const cv::Point_< _Tp >& p_2 )
+    {
+        return sqrt( pow( p_1.x - p_2.x , 2 ) + pow( p_1.y - p_2.y , 2 ) );
+    }
+
 } // zeabus_opencv
 
 } // operations
